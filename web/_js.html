@@ -1664,6 +1664,8 @@ function renderClients(){
     $("#cliLead").textContent = cl.org;
     $("#cliCount").textContent = cl.convs.length + " " + plural(cl.convs.length,"обращение","обращения","обращений");
     $("#cliSearchBox").hidden = true;
+    $("#cliSelBtn").hidden = true;
+    $("#cliSelBar").hidden = true;
     hint.textContent = "";
 
     const crumb = el("div","crumb");
@@ -1734,6 +1736,12 @@ function renderClients(){
       ms.append(w);
     }
     card.append(ms);
+    const del = el("button","pdel");
+    del.type = "button";
+    del.innerHTML = '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.8 4.2h10.4M6.4 4.2V2.8h3.2v1.4M4.2 4.2l.7 9a1 1 0 0 0 1 .9h4.2a1 1 0 0 0 1-.9l.7-9M6.6 6.8v4.6M9.4 6.8v4.6"/></svg>';
+    del.append(document.createTextNode("Удалить клиента"));
+    del.onclick = () => openCliDel([cl]);
+    card.append(del);
     grid.append(card);
 
     const right = el("div");
@@ -1763,8 +1771,13 @@ function renderClients(){
   $("#cliTitle").textContent = "База клиентов";
   $("#cliLead").textContent = "Кто обращался, с чем и как с ними разговаривать";
   $("#cliSearchBox").hidden = false;
+  $("#cliSelBtn").hidden = !clients.length;
+  $("#cliSelBtn").setAttribute("aria-pressed", String(cliSelecting));
+  $("#cliSelBar").hidden = !cliSelecting;
 
   const list = clients.filter(clientMatches).sort((a,b) => lastContact(b) - lastContact(a));
+  cliShown = list;
+  renderCliSelBar();
   const marked = clients.filter(c => c.mood).length;
   $("#cliCount").textContent = clients.length + " " + plural(clients.length,"клиент","клиента","клиентов");
   hint.textContent = "Помечено " + marked + " из " + clients.length +
@@ -1772,10 +1785,17 @@ function renderClients(){
 
   if(!list.length){ body.append(emptyState("По запросу «"+cQuery+"» никого нет")); return; }
 
-  const table = el("div","ctable");
+  const table = el("div","ctable" + (cliSelecting ? " selecting" : ""));
   list.forEach(cl => {
     const b = el("button","crow");
     b.type = "button";
+    if(cliSelecting){
+      b.setAttribute("role","checkbox");
+      b.setAttribute("aria-checked", String(cliPicked.has(cl.id)));
+      const box = el("span","cbx");
+      box.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.3l2.3 2.3 4.7-5"/></svg>';
+      b.append(box);
+    }
 
     const c1 = el("div","c1");
     c1.append(el("b",null,cl.name), el("span",null,cl.org));
@@ -1802,10 +1822,418 @@ function renderClients(){
     c3.append(when);
 
     b.append(clientAvatar(cl, 50), c1, c2, c3);
-    b.onclick = () => { openClient = cl.id; renderClients(); };
-    table.append(b);
+    b.onclick = () => {
+      if(!cliSelecting){ openClient = cl.id; renderClients(); return; }
+      if(cliPicked.has(cl.id)) cliPicked.delete(cl.id); else cliPicked.add(cl.id);
+      b.setAttribute("aria-checked", String(cliPicked.has(cl.id)));
+      renderCliSelBar();
+    };
+    // Строка — сама кнопка, поэтому корзину ставим рядом, а не внутрь
+    const line = el("div","cline");
+    line.append(b);
+    if(!cliSelecting){
+      const del = el("button","cdel");
+      del.type = "button";
+      del.title = "Удалить клиента";
+      del.setAttribute("aria-label", "Удалить клиента " + cl.name);
+      del.innerHTML = '<svg width="17" height="17" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.8 4.2h10.4M6.4 4.2V2.8h3.2v1.4M4.2 4.2l.7 9a1 1 0 0 0 1 .9h4.2a1 1 0 0 0 1-.9l.7-9M6.6 6.8v4.6M9.4 6.8v4.6"/></svg>';
+      del.onclick = () => openCliDel([cl]);
+      line.append(del);
+    }
+    table.append(line);
   });
   body.append(table);
+}
+
+/* ---------- удаление клиентов ----------
+   Для чистки тестовых и мусорных записей: из карточки по одному или
+   галочками сразу много. Стирается всё: карточка, обращения, файлы. */
+let cliSelecting = false;
+const cliPicked = new Set();
+let cliShown = [];
+let cliDelTargets = [];
+
+function renderCliSelBar(){
+  const n = cliPicked.size;
+  $("#cliSelInfo").textContent = n
+    ? "Выбрано " + n + " " + plural(n,"клиент","клиента","клиентов")
+    : "Отметьте клиентов, которых нужно удалить";
+  $("#cliSelDel").disabled = !n;
+  $("#cliSelDel").textContent = n ? "Удалить " + n : "Удалить";
+}
+
+function setCliSelecting(on){
+  cliSelecting = on;
+  cliPicked.clear();
+  renderClients();
+}
+
+function openCliDel(list){
+  cliDelTargets = list;
+  const n = list.length;
+  $("#cdTitle").textContent = n === 1 ? "Удалить клиента навсегда?"
+    : "Удалить " + n + " " + plural(n,"клиента","клиентов","клиентов") + " навсегда?";
+  const box = $("#cdBody");
+  const fill = s => {
+    box.textContent = "";
+    const row = (k, v) => { const d = el("div","drow"); d.append(el("dt",null,k), el("dd",null,v)); box.append(d); };
+    if(n === 1) row("Клиент", list[0].name + (list[0].org && list[0].org !== "—" ? " · " + list[0].org : ""));
+    else box.append(el("div","cdnames", list.map(c => c.name).join(", ")));
+    row("Обращений", String(s.conversations));
+    row("Сообщений", s.messages == null ? "считаю…" : String(s.messages));
+    row("Вложений", s.files == null ? "считаю…" : String(s.files));
+    if(s.active) box.append(el("div","cdactive",
+      "⚠ " + s.active + " " + plural(s.active,"обращение ещё не в архиве","обращения ещё не в архиве","обращений ещё не в архиве") +
+      " — живые разговоры тоже пропадут"));
+  };
+  const convIds = list.flatMap(c => c.convs);
+  fill({conversations: convIds.length,
+        active: convIds.map(byId).filter(c => c && c.status !== "archived").length,
+        messages: LIVE ? null : convIds.map(byId).reduce((t,c) => t + (c ? c.msgs.length : 0), 0),
+        files: LIVE ? null : 0});
+  $("#cdOk").disabled = false;
+  $("#cliDelModal").hidden = false;
+  if(LIVE){
+    api("/api/clients/summary", {method:"POST", body:JSON.stringify({ids: list.map(c => c.cid)})})
+      .then(fill)
+      .catch(e => console.warn("сводка не получена:", e.message));
+  }
+}
+
+function closeCliDel(){ $("#cliDelModal").hidden = true; cliDelTargets = []; }
+
+function confirmCliDel(){
+  const list = cliDelTargets;
+  if(!list.length) return;
+  const gone = new Set(list.map(c => c.id));
+  const finish = () => {
+    if(openClient && gone.has(openClient)) openClient = null;
+    cliSelecting = false; cliPicked.clear();
+    closeCliDel();
+  };
+  if(!LIVE){
+    for(let i = convs.length - 1; i >= 0; i--) if(gone.has(convs[i].client)) convs.splice(i, 1);
+    for(let i = clients.length - 1; i >= 0; i--) if(gone.has(clients[i].id)){ delete CBY[clients[i].id]; clients.splice(i, 1); }
+    if(!byId(activeId)) activeId = null;
+    finish();
+    renderClients(); renderFilters(); renderList(); renderThread(); renderCard();
+    return;
+  }
+  $("#cdOk").disabled = true;
+  api("/api/clients/delete", {method:"POST", body:JSON.stringify({ids: list.map(c => c.cid)})})
+    .then(() => { finish(); renderClients(); scheduleRefresh(); })
+    .catch(e => {
+      $("#cdOk").disabled = false;
+      $("#cdBody").append(el("div","cdactive","Не удалось удалить: " + e.message));
+    });
+}
+
+/* ================= сервисная форма =================
+   Итог разговора: сотрудник, данные клиента и темы плитками. Запись
+   остаётся в пульте (вкладка «Итоги») и уходит в Google Таблицу —
+   отправляет сервер. Без сервера (демо) записи живут в браузере. */
+const SF_EMPLOYEES = ["Заварзин", "Гаев", "Шляпников", "Кирилин"];
+const SF_EMP_COLORS = ["#2f9fe0", "#8a63e8", "#e5873a", "#2fb57a"];
+// Темы — те же разделы и плитки, что в окне «Куда отправить обращение».
+// В Google Таблицу уходят прежние слова из старой формы
+// service_form_google_v6.html, чтобы новые строки совпадали со старыми.
+const SF_SHEET = {
+  install:"Установка", download:"Скачать", driver:"Драйвер", remote:"Удалённое подключение",
+  err_turbo:"Ошибка в Турбосметчике", err_build:"Ошибка в сборке",
+  functions:"Функции программы", docprops:"Свойства документа",
+  formulas:"Формулы и/или Итоговые начисления", correction:"Применить поправку",
+  print:"Настройки печати", objsmeta:"Объектный сметчик", explnote:"Пояснительная записка",
+  base_q:"Вопрос по базе", addon:"Выбрать дополнение", snb:"Преобразовать СНБ",
+  indexes:"Вопрос по индексам", techpart:"Тех часть", pir:"ПИР", rzd:"РЖД",
+  gge:"GGE/MGE Импорт/Экспорт", gge_exp:"Вопрос mge/gge от эксперта", arps:"АРПС",
+  vor:"ВОР", pricelist:"Импорт прайс листа",
+  method:"Вопрос по методике", consult:"Консультация", market:"Конъюнктурный анализ",
+  nmck:"НМЦК Смета контракта", finderr:"Поиск ошибки в смете"
+};
+const SF_KEY = {};
+Object.keys(SF_SHEET).forEach(k => { SF_KEY[SF_SHEET[k]] = k; });
+const SF_FIELDS = ["serial","workplace","organization","subscription","phone","name","comment"];
+
+let sfTab = "fill";
+let sfForms = [];
+let sfLoaded = false;
+let sfLogQ = "";
+let sfLogEmp = "";
+let sfEmployee = store.get("sfEmployee", "");
+
+const sfTopicColor = t => (FBY[SF_KEY[t]] || {}).c || "var(--ink-3)";
+const sfEmpColor = n => SF_EMP_COLORS[SF_EMPLOYEES.indexOf(n)] || "#6b7e9a";
+const sfSplit = v => v.split(",").map(s => s.trim()).filter(Boolean);
+const sfPad = n => String(n).padStart(2, "0");
+
+function sfTick(){
+  const d = new Date();
+  $("#sfDate").textContent = sfPad(d.getDate()) + "." + sfPad(d.getMonth()+1) + "." + d.getFullYear();
+  $("#sfTime").textContent = sfPad(d.getHours()) + ":" + sfPad(d.getMinutes()) + ":" + sfPad(d.getSeconds());
+}
+
+function renderSfEmployees(){
+  const box = $("#sfEmps");
+  box.textContent = "";
+  SF_EMPLOYEES.forEach(n => {
+    const b = el("button","sfemp");
+    b.type = "button";
+    b.setAttribute("role","radio");
+    b.setAttribute("aria-checked", String(sfEmployee === n));
+    const i = el("i", null, n[0]);
+    i.style.setProperty("--c", sfEmpColor(n));
+    b.append(i, document.createTextNode(n));
+    b.onclick = () => {
+      sfEmployee = n; store.set("sfEmployee", n);
+      box.classList.remove("need");
+      renderSfEmployees();
+    };
+    box.append(b);
+  });
+}
+
+function renderSfTiles(){
+  const picked = sfSplit($("#sf_questions").value);
+  const box = $("#sfTiles");
+  box.textContent = "";
+  // Раздел — строка: слева название, справа его темы кнопками с галочкой
+  GROUPS.forEach(g => {
+    const row = el("div","sfgrp");
+    row.style.setProperty("--fc", g.c);
+    const head = el("div","sfg");
+    head.append(folderIcon(g, 26), document.createTextNode(g.n));
+    const n = g.kids.filter(f => picked.includes(SF_SHEET[f.k])).length;
+    if(n) head.append(el("b", null, String(n)));
+    const pills = el("div","sfpills");
+    g.kids.forEach(f => {
+      const b = el("button","sfpill");
+      b.type = "button";
+      b.setAttribute("aria-pressed", String(picked.includes(SF_SHEET[f.k])));
+      const ck = el("i");
+      ck.innerHTML = '<svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.3l2.3 2.3 4.7-5"/></svg>';
+      b.append(ck, document.createTextNode(f.n));
+      b.onclick = () => sfToggle(SF_SHEET[f.k]);
+      pills.append(b);
+    });
+    row.append(head, pills);
+    box.append(row);
+  });
+  $("#sfQn").textContent = picked.length ? "выбрано " + picked.length : "";
+}
+
+// Тема плиткой добавляется в строку через запятую, повторный клик убирает
+function sfToggle(t){
+  const area = $("#sf_questions");
+  const items = sfSplit(area.value);
+  const i = items.indexOf(t);
+  if(i >= 0) items.splice(i, 1); else items.push(t);
+  area.value = items.join(", ");
+  renderSfTiles();
+}
+
+function sfMark(){
+  SF_FIELDS.forEach(k => {
+    const f = $("#sf_" + k);
+    f.closest(".sff").classList.toggle("filled", !!f.value.trim());
+  });
+}
+
+function sfMsg(text, kind){
+  const m = $("#sfMsg");
+  m.textContent = text || "";
+  m.className = "sfmsg" + (kind ? " " + kind : "");
+}
+
+function sfClear(){
+  SF_FIELDS.concat("questions").forEach(k => { $("#sf_" + k).value = ""; });
+  sfMark(); renderSfTiles();
+}
+
+// Открытое обращение — подставить из него ключ, организацию, телефон, имя
+function sfConv(){
+  const c = activeId && byId(activeId);
+  return c && !chatClosed ? c : null;
+}
+function renderSfPull(){
+  const c = sfConv();
+  $("#sfPull").hidden = !c;
+  if(c) $("#sfPullTxt").textContent = "Из обращения: " + c.name;
+}
+function sfPull(){
+  const c = sfConv();
+  if(!c) return;
+  const it = c.intake || {};
+  const val = v => (v && v !== "—") ? v : "";
+  const set = (k, v) => { if(val(v)) $("#sf_" + k).value = val(v); };
+  set("serial", it.key);
+  set("organization", it.org);
+  set("phone", it.phone);
+  set("name", val(it.fio) || c.name);
+  sfMark();
+  sfMsg("Данные из обращения подставлены", "wait");
+}
+
+async function sfSubmit(e){
+  if(e) e.preventDefault();
+  const btn = $("#sfSubmit");
+  if(btn.classList.contains("busy")) return;
+
+  if(!sfEmployee){
+    const box = $("#sfEmps");
+    box.classList.remove("need"); void box.offsetWidth; box.classList.add("need");
+    sfMsg("Выберите сотрудника", "err");
+    return;
+  }
+  const data = {employee: sfEmployee, questions: $("#sf_questions").value.trim()};
+  SF_FIELDS.forEach(k => { data[k] = $("#sf_" + k).value.trim(); });
+  if(!SF_FIELDS.some(k => data[k]) && !data.questions){
+    sfMsg("Форма пустая — заполните хотя бы одно поле", "err");
+    return;
+  }
+
+  btn.classList.add("busy");
+  sfMsg("Отправляю в таблицу…", "wait");
+  try{
+    let row;
+    if(LIVE){
+      row = await api("/api/service-forms", {method:"POST", body:JSON.stringify(data)});
+    } else {
+      const d = new Date();
+      row = Object.assign({}, data, {
+        id: Date.now(), created_at: Date.now(), sent: 0,
+        date: $("#sfDate").textContent, time: $("#sfTime").textContent,
+        error: "Демо: без сервера в таблицу не отправляется"
+      });
+      const demo = store.get("sfDemo", []); demo.unshift(row); store.set("sfDemo", demo);
+    }
+    sfForms = [row].concat(sfForms.filter(f => f.id !== row.id));
+    sfClear();
+    renderSfCount();
+    if(sfTab === "log") renderSfLog();
+    const card = $("#sfFill .sfmain");
+    card.classList.remove("sfdone"); void card.offsetWidth; card.classList.add("sfdone");
+    if(row.sent) sfMsg("✓ Сохранено и отправлено в Google Таблицу · " + row.time, "ok");
+    else sfMsg("Сохранено в пульте, но в таблицу не ушло: " + (row.error || "нет связи") + ". Повторить можно в «Итогах».", "err");
+  }catch(err){
+    sfMsg("Не сохранилось: " + err.message, "err");
+  }finally{
+    btn.classList.remove("busy");
+  }
+}
+
+async function sfLoad(){
+  if(LIVE){
+    try{ sfForms = await api("/api/service-forms"); sfLoaded = true; }
+    catch(e){ console.warn("сервисная форма:", e.message); }
+  } else {
+    sfForms = store.get("sfDemo", []); sfLoaded = true;
+  }
+  renderSfCount();
+  if(sfTab === "log") renderSfLog();
+}
+
+function renderSfCount(){
+  $("#sfLogCount").textContent = sfForms.length ? String(sfForms.length) : "";
+}
+
+function setSfTab(tab){
+  sfTab = tab;
+  $("#sfTabFill").setAttribute("aria-selected", String(tab === "fill"));
+  $("#sfTabLog").setAttribute("aria-selected", String(tab === "log"));
+  $("#sfFill").hidden = tab !== "fill";
+  $("#sfLog").hidden = tab !== "log";
+  if(tab === "log"){ renderSfLog(); sfLoad(); }
+}
+
+function renderSfLog(){
+  const empBox = $("#sfEmpFilter");
+  empBox.textContent = "";
+  ["", ...SF_EMPLOYEES].forEach(n => {
+    const b = el("button","chip", n || "Все");
+    b.type = "button";
+    b.setAttribute("aria-pressed", String(sfLogEmp === n));
+    b.onclick = () => { sfLogEmp = n; renderSfLog(); };
+    empBox.append(b);
+  });
+
+  const q = sfLogQ.toLowerCase();
+  const rows = sfForms.filter(f =>
+    (!sfLogEmp || f.employee === sfLogEmp) &&
+    (!q || [f.serial, f.workplace, f.organization, f.subscription, f.phone, f.name, f.comment, f.questions, f.employee, f.date]
+            .join(" ").toLowerCase().includes(q)));
+
+  const today = $("#sfDate").textContent;
+  const unsent = sfForms.filter(f => !f.sent).length;
+  const sum = $("#sfSum");
+  sum.textContent = "";
+  const stat = (n, t, cls) => { const s = el("span", cls); s.append(el("b", null, String(n)), document.createTextNode(t)); sum.append(s); };
+  stat(sfForms.filter(f => f.date === today).length, "сегодня");
+  stat(sfForms.length, "всего");
+  if(unsent) stat(unsent, "не ушло в таблицу", "warn");
+
+  const body = $("#sfLogBody");
+  body.textContent = "";
+  if(!rows.length){
+    body.append(el("div","empty", !sfLoaded ? "Загружаю…" : sfForms.length ? "Ничего не нашлось" : "Пока нет ни одной заполненной формы"));
+    return;
+  }
+  let day = "";
+  rows.forEach(f => {
+    if(f.date !== day){
+      day = f.date;
+      body.append(el("div","sfday", f.date === today ? "Сегодня · " + f.date : f.date));
+    }
+    const r = el("div","sfrow" + (f.sent ? "" : " unsent"));
+    const tm = el("div","tm", (f.time || "").slice(0,5));
+
+    const who = el("div","who");
+    who.append(el("b", null, f.organization || f.name || "Без организации"));
+    const sub = [f.organization ? f.name : "", f.serial && "ключ " + f.serial, f.workplace && "место " + f.workplace,
+                 f.subscription && "подписка " + f.subscription, f.phone].filter(Boolean).join(" · ");
+    if(sub) who.append(el("span", null, sub));
+
+    const what = el("div","what");
+    const items = sfSplit(f.questions || "");
+    const known = items.filter(t => SF_KEY[t]);
+    known.forEach(t => { const q = el("span","q", t); q.style.setProperty("--c", sfTopicColor(t)); what.append(q); });
+    const free = items.filter(t => !known.includes(t)).join(", ");
+    const text = [free, f.comment].filter(Boolean).join("\n");
+    if(text) what.append(el("p", null, text));
+
+    const st = el("div","st");
+    const emp = el("span","emp");
+    const dot = el("i"); dot.style.setProperty("--c", sfEmpColor(f.employee));
+    emp.append(dot, document.createTextNode(f.employee || "—"));
+    st.append(emp);
+    if(f.sent){
+      st.append(el("span","sfok", "✓ в таблице"));
+    } else {
+      if(LIVE && !f.error){
+        st.append(el("span","sfbad wait", "отправляется…"));
+      } else st.append(el("span","sfbad", "не ушло: " + (f.error || "нет связи")));
+      if(LIVE && f.error){
+        const again = el("button","ibtn", "Отправить ещё раз");
+        again.type = "button";
+        again.onclick = async () => {
+          again.disabled = true; again.textContent = "Отправляю…";
+          try{
+            const row = await api("/api/service-forms/" + f.id + "/send", {method:"POST"});
+            sfForms = sfForms.map(x => x.id === row.id ? row : x);
+          }catch(e){ f.error = e.message; }
+          renderSfLog();
+        };
+        st.append(again);
+      }
+    }
+    r.append(tm, who, what, st);
+    body.append(r);
+  });
+}
+
+function renderService(){
+  sfTick(); renderSfEmployees(); renderSfTiles(); renderSfPull(); sfMark();
+  if(!sfLoaded) sfLoad();
+  if(sfTab === "log") renderSfLog();
 }
 
 /* ================= навигация ================= */
@@ -1814,11 +2242,14 @@ function setSection(name){
   $("#viewInbox").classList.toggle("on", name === "inbox");
   $("#viewClients").classList.toggle("on", name === "clients");
   $("#viewArchive").classList.toggle("on", name === "archive");
+  $("#viewService").classList.toggle("on", name === "service");
   $("#navInbox").setAttribute("aria-pressed", String(name === "inbox"));
   $("#navClients").setAttribute("aria-pressed", String(name === "clients"));
   $("#navArchive").setAttribute("aria-pressed", String(name === "archive"));
+  $("#navService").setAttribute("aria-pressed", String(name === "service"));
   if(name === "archive") renderArchive();
   if(name === "clients") renderClients();
+  if(name === "service") renderService();
 }
 function goInbox(id){
   setSection("inbox");
@@ -2265,7 +2696,37 @@ $("#archiveModal").addEventListener("click", e => { if(e.target.id === "archiveM
 $("#navInbox").onclick = () => setSection("inbox");
 $("#navClients").onclick = () => { openClient = null; setSection("clients"); };
 $("#navArchive").onclick = () => { openFolder = null; setSection("archive"); };
+$("#navService").onclick = () => setSection("service");
+$("#sfTabFill").onclick = () => setSfTab("fill");
+$("#sfTabLog").onclick = () => setSfTab("log");
+$("#sfFill").addEventListener("submit", sfSubmit);
+$("#sfFill").addEventListener("keydown", e => {
+  if(e.key === "Enter" && (e.ctrlKey || e.metaKey)){ e.preventDefault(); sfSubmit(); }
+  // Enter в коротком поле переходит к следующему, а не отправляет форму
+  else if(e.key === "Enter" && e.target.tagName === "INPUT"){
+    e.preventDefault();
+    const list = [...$("#sfFill").querySelectorAll("input, textarea")];
+    const next = list[list.indexOf(e.target) + 1];
+    if(next) next.focus();
+  }
+});
+$("#sfFill").addEventListener("input", e => {
+  if(e.target.id === "sf_questions") renderSfTiles();
+  sfMark();
+});
+$("#sfReset").onclick = () => { sfClear(); sfMsg(""); };
+$("#sfPull").onclick = sfPull;
+$("#sfLogQ").addEventListener("input", e => { sfLogQ = e.target.value.trim(); renderSfLog(); });
+setInterval(() => { if(section === "service") sfTick(); }, 1000);
 $("#cliQ").addEventListener("input", e => { cQuery = e.target.value.trim(); renderClients(); });
+$("#cliSelBtn").onclick = () => setCliSelecting(!cliSelecting);
+$("#cliSelCancel").onclick = () => setCliSelecting(false);
+$("#cliSelAll").onclick = () => { cliShown.forEach(c => cliPicked.add(c.id)); renderClients(); };
+$("#cliSelDel").onclick = () => { const l = clients.filter(c => cliPicked.has(c.id)); if(l.length) openCliDel(l); };
+$("#cdClose").onclick = closeCliDel;
+$("#cdCancel").onclick = closeCliDel;
+$("#cdOk").onclick = confirmCliDel;
+$("#cliDelModal").addEventListener("click", e => { if(e.target.id === "cliDelModal") closeCliDel(); });
 $("#cliClear").onclick = () => { $("#cliQ").value = ""; cQuery = ""; renderClients(); $("#cliQ").focus(); };
 $("#navIntake").onclick = () => { renderScript(); $("#intakeModal").hidden = false; };
 $("#iClose").onclick = () => { $("#intakeModal").hidden = true; };
@@ -2294,6 +2755,7 @@ document.addEventListener("keydown", e => {
     if(!$("#archiveModal").hidden) closeArchiveModal();
     if(!$("#intakeModal").hidden) $("#intakeModal").hidden = true;
     if(!$("#deleteModal").hidden) closeDeleteModal();
+    if(!$("#cliDelModal").hidden) closeCliDel();
     return;
   }
   if(!$("#archiveModal").hidden && e.key === "Enter" && pendingFolders.length &&

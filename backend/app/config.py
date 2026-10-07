@@ -27,3 +27,9 @@ TRUST_PROXY = os.getenv("TRUST_PROXY", "") == "1"
 
 # Строка «спросить у базы»: если есть ANTHROPIC_API_KEY, вопросы разбирает Claude
 ASK_MODEL = os.getenv("ASK_MODEL", "claude-opus-5")
+
+# Сервисная форма: адрес скрипта Google Таблицы, который принимает строки
+# (тот же, что был в service_form_google_v6.html). Хранится только в .env:
+# репозиторий публичный, а по адресу кто угодно может писать в таблицу.
+# Пусто — записи остаются в пульте, в таблицу не отправляются.
+SERVICE_FORM_URL = os.getenv("SERVICE_FORM_URL", "")

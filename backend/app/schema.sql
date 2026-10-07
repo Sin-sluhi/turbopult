@@ -54,3 +54,25 @@ CREATE TABLE IF NOT EXISTS seen_updates (
 
 -- Папка архива и присутствие клиента добавляются миграцией в db.connect(),
 -- здесь описаны для новых баз.
+
+-- Сервисная форма: итог разговора. Копия уходит в Google Таблицу,
+-- sent = 1 — таблица приняла строку.
+CREATE TABLE IF NOT EXISTS service_forms (
+  id           INTEGER PRIMARY KEY,
+  date         TEXT    NOT NULL,
+  time         TEXT    NOT NULL,
+  created_at   INTEGER NOT NULL,
+  author       TEXT    NOT NULL DEFAULT '',
+  employee     TEXT    NOT NULL DEFAULT '',
+  serial       TEXT    NOT NULL DEFAULT '',
+  workplace    TEXT    NOT NULL DEFAULT '',
+  organization TEXT    NOT NULL DEFAULT '',
+  subscription TEXT    NOT NULL DEFAULT '',
+  phone        TEXT    NOT NULL DEFAULT '',
+  name         TEXT    NOT NULL DEFAULT '',
+  comment      TEXT    NOT NULL DEFAULT '',
+  questions    TEXT    NOT NULL DEFAULT '',
+  sent         INTEGER NOT NULL DEFAULT 0,
+  sent_at      INTEGER NOT NULL DEFAULT 0,
+  error        TEXT    NOT NULL DEFAULT ''
+);

@@ -16,3 +16,12 @@ backend/tunnel.log
 
 # Внутренние заметки: адреса домашней сети и доступы
 СОСТОЯНИЕ-ПРОЕКТА.md
+
+# Лог фонового запуска
+backend/server.log
+backend/server.old.log
+
+# Программа CloudPub (скачивается с cloudpub.ru) и её лог
+tools/
+backend/cloudpub.log
+backend/cloudpub.old.log

@@ -7,7 +7,7 @@ from fastapi import Body, FastAPI, File, Form, HTTPException, Request, UploadFil
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import access, adapters, analytics, config, core, db, events, folders, moods, polling, search, storage
+from . import access, adapters, analytics, config, core, db, events, folders, moods, polling, search, service, storage
 
 app = FastAPI(title="Турбопульт", docs_url="/api/docs")
 
@@ -235,6 +235,24 @@ def clients(q: str = ""):
     return core.list_clients(q)
 
 
+@app.post("/api/clients/summary")
+def clients_summary(payload: dict = Body(...)):
+    """Сводка перед удалением клиентов: сколько обращений и файлов пропадёт."""
+    try:
+        return core.clients_summary(payload.get("ids") or [])
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/clients/delete")
+def clients_delete(payload: dict = Body(...)):
+    """Удаляет клиентов навсегда вместе с обращениями, перепиской и файлами."""
+    try:
+        return core.delete_clients(payload.get("ids") or [])
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @app.get("/api/clients/{contact_id}")
 def client(contact_id: int):
     row = core.get_client(contact_id)
@@ -250,6 +268,36 @@ def client_mood(contact_id: int, payload: dict = Body(...)):
         return core.set_mood(contact_id, payload.get("mood", ""), payload.get("author"))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.get("/api/service-forms")
+def service_forms():
+    """Итоги сервисной формы, новые сверху."""
+    return service.list_forms()
+
+
+@app.post("/api/service-forms")
+async def service_form_create(payload: dict = Body(...)):
+    """Сохраняет итог разговора и сразу отправляет его в Google Таблицу.
+    Заодно досылает записи, которые раньше не ушли."""
+    try:
+        form = service.create(payload)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    form = await service.send(form["id"])
+    if form["sent"]:
+        # Google отвечает — фоном досылаем то, что не ушло раньше
+        asyncio.create_task(service.send_pending())
+    return form
+
+
+@app.post("/api/service-forms/{form_id}/send")
+async def service_form_resend(form_id: int):
+    """Повторная отправка в таблицу записи, которая не ушла."""
+    try:
+        return await service.send(form_id)
     except LookupError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

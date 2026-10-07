@@ -334,6 +334,66 @@ def get_client(contact_id: int) -> dict | None:
     return row
 
 
+def _client_ids(ids) -> list[int]:
+    try:
+        out = sorted({int(i) for i in ids})
+    except (TypeError, ValueError):
+        raise ValueError("Неверный список клиентов")
+    if not out:
+        raise ValueError("Не выбран ни один клиент")
+    return out
+
+
+def clients_summary(ids) -> dict:
+    """Что пропадёт при удалении клиентов — показываем перед подтверждением."""
+    ids = _client_ids(ids)
+    marks = ",".join("?" * len(ids))
+    people = db.query(f"SELECT id, display_name, org FROM contacts WHERE id IN ({marks})", tuple(ids))
+    convs = db.query(f"SELECT id, status FROM conversations WHERE contact_id IN ({marks})", tuple(ids))
+    conv_ids = [c["id"] for c in convs]
+    messages = files = 0
+    if conv_ids:
+        cm = ",".join("?" * len(conv_ids))
+        for r in db.query(f"SELECT attachments FROM messages WHERE conversation_id IN ({cm})",
+                          tuple(conv_ids)):
+            messages += 1
+            files += sum(1 for a in db.loads(r["attachments"], []) if a.get("url"))
+    return {
+        "clients": len(people),
+        "names": [p["display_name"] or "Без имени" for p in people],
+        "conversations": len(convs),
+        "active": sum(1 for c in convs if c["status"] != "archived"),
+        "messages": messages,
+        "files": files,
+    }
+
+
+def delete_clients(ids) -> dict:
+    """Удаляет клиентов навсегда: карточку, все обращения, переписку и файлы.
+
+    Для чистки тестовых и мусорных записей. Если человек напишет снова,
+    бот заведёт его заново, как нового клиента.
+    """
+    ids = _client_ids(ids)
+    marks = ",".join("?" * len(ids))
+    convs = db.query(f"SELECT id FROM conversations WHERE contact_id IN ({marks})", tuple(ids))
+    files = messages = 0
+    for c in convs:
+        for row in db.query("SELECT attachments FROM messages WHERE conversation_id = ?", (c["id"],)):
+            messages += 1
+            for att in db.loads(row["attachments"], []):
+                if storage.remove(att.get("url", "")):
+                    files += 1
+        db.execute("DELETE FROM messages WHERE conversation_id = ?", (c["id"],))
+        db.execute("DELETE FROM conversations WHERE id = ?", (c["id"],))
+        events.publish("conversation", {"conversation_id": c["id"], "deleted": True})
+    deleted = db.query(f"SELECT id FROM contacts WHERE id IN ({marks})", tuple(ids))
+    db.execute(f"DELETE FROM contacts WHERE id IN ({marks})", tuple(ids))
+    events.publish("client", {"deleted": [d["id"] for d in deleted]})
+    return {"clients": len(deleted), "conversations": len(convs),
+            "messages": messages, "files": files}
+
+
 def set_mood(contact_id: int, mood_key: str, author: str | None = None) -> dict:
     """Пометить манеру общения. Пустая строка снимает пометку."""
     if not moods.is_valid(mood_key):
