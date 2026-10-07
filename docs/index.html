@@ -1,0 +1,4010 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<title>Турбопульт</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* ===================== ОБЛИК «АВРОРА» — значения по умолчанию ===================== */
+:root{
+  --bg:#070b14;
+  --mesh-a:rgba(0,180,255,.32);
+  --mesh-b:rgba(122,74,235,.30);
+  --mesh-c:rgba(255,140,50,.12);
+  --panel:rgba(17,25,42,.66);
+  --panel-2:rgba(255,255,255,.045);
+  --panel-3:rgba(255,255,255,.08);
+  --solid:#111a2b;
+  --brd:rgba(255,255,255,.10);
+  --brd-2:rgba(255,255,255,.20);
+  --blur:22px;
+  --ink:#eff4fc;
+  --ink-2:#9db0ca;
+  --ink-3:#6b7e9a;
+  --acc:#22c8f5;
+  --acc-2:#6fe6ff;
+  --acc-ink:#03202c;
+  --acc-soft:rgba(34,200,245,.15);
+  --glow:rgba(34,200,245,.5);
+  --ok:#3fd18a;      --ok-soft:rgba(63,209,138,.15);
+  --warn:#ffb347;    --warn-soft:rgba(255,179,71,.15);
+  --crit:#ff6f62;    --crit-soft:rgba(255,111,98,.15);
+  --green:#35d48a;   --orange:#ffa53a;  --red:#ff5f52;
+  --tg:#4aa8e8;      --max:#9b7bff;
+  --mark:rgba(255,205,70,.3);
+  --mark-ink:#ffe9a8;
+  --bub-in:rgba(255,255,255,.06);
+  --bub-in-brd:rgba(255,255,255,.09);
+  --sh:0 2px 6px rgba(0,0,0,.28), 0 18px 48px rgba(0,0,0,.4);
+  --sh-lg:0 10px 24px rgba(0,0,0,.4), 0 48px 90px rgba(0,0,0,.6);
+  --hl:inset 0 1px 0 rgba(255,255,255,.09);
+  --ease:cubic-bezier(.32,.72,.28,1);
+  --mono:"IBM Plex Mono", ui-monospace, Consolas, monospace;
+  --sans:"Manrope", system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ===================== ОБЛИК «РАССВЕТ» ===================== */
+:root[data-skin="dawn"]{
+  --bg:#f1ece4;
+  --mesh-a:rgba(0,165,225,.22);
+  --mesh-b:rgba(255,160,70,.24);
+  --mesh-c:rgba(130,90,230,.13);
+  --panel:rgba(255,255,255,.74);
+  --panel-2:rgba(255,255,255,.62);
+  --panel-3:rgba(20,32,55,.045);
+  --solid:#fffdfa;
+  --brd:rgba(20,32,55,.10);
+  --brd-2:rgba(20,32,55,.20);
+  --blur:20px;
+  --ink:#131e33;
+  --ink-2:#4d596f;
+  --ink-3:#8a93a5;
+  --acc:#0090c6;
+  --acc-2:#00b7e8;
+  --acc-ink:#ffffff;
+  --acc-soft:rgba(0,144,198,.13);
+  --glow:rgba(0,144,198,.32);
+  --ok:#1f9c60;      --ok-soft:rgba(31,156,96,.13);
+  --warn:#c07a12;    --warn-soft:rgba(192,122,18,.15);
+  --crit:#c93f31;    --crit-soft:rgba(201,63,49,.13);
+  --green:#25a86a;   --orange:#e8871a;  --red:#d94a3c;
+  --tg:#2b7cb8;      --max:#6b4bd6;
+  --mark:rgba(255,205,70,.55);
+  --mark-ink:#3a2a00;
+  --bub-in:rgba(255,255,255,.85);
+  --bub-in-brd:rgba(20,32,55,.09);
+  --sh:0 2px 6px rgba(80,60,40,.07), 0 18px 44px rgba(80,60,40,.12);
+  --sh-lg:0 10px 24px rgba(80,60,40,.14), 0 48px 90px rgba(80,60,40,.22);
+  --hl:inset 0 1px 0 rgba(255,255,255,.9);
+}
+
+/* ===================== ОБЛИК «КОНТУР» ===================== */
+:root[data-skin="contour"]{
+  --bg:#070e1d;
+  --mesh-a:rgba(0,150,210,.14);
+  --mesh-b:rgba(30,70,150,.16);
+  --mesh-c:rgba(0,0,0,0);
+  --panel:#0e1929;
+  --panel-2:rgba(255,255,255,.035);
+  --panel-3:rgba(255,255,255,.07);
+  --solid:#0e1929;
+  --brd:rgba(255,255,255,.08);
+  --brd-2:rgba(255,255,255,.18);
+  --blur:0px;
+  --ink:#e9f0f9;
+  --ink-2:#98a8bd;
+  --ink-3:#647289;
+  --acc:#00b3e3;
+  --acc-2:#3fd0ff;
+  --acc-ink:#031a24;
+  --acc-soft:rgba(0,179,227,.13);
+  --glow:rgba(0,179,227,.34);
+  --ok:#35b877;      --ok-soft:rgba(53,184,119,.13);
+  --warn:#e3a13d;    --warn-soft:rgba(227,161,61,.13);
+  --crit:#e85c4f;    --crit-soft:rgba(232,92,79,.13);
+  --green:#2fc07d;   --orange:#f0982c;  --red:#e8503f;
+  --tg:#3f9ad8;      --max:#8a6bf5;
+  --mark:rgba(255,200,60,.26);
+  --mark-ink:#ffe08a;
+  --bub-in:rgba(255,255,255,.05);
+  --bub-in-brd:rgba(255,255,255,.08);
+  --sh:0 1px 3px rgba(0,0,0,.4), 0 10px 26px rgba(0,0,0,.45);
+  --sh-lg:0 8px 20px rgba(0,0,0,.5), 0 40px 80px rgba(0,0,0,.6);
+  --hl:inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+html,body{height:100%}
+body{
+  margin:0;color:var(--ink);background:var(--bg);
+  font-family:var(--sans);font-size:14px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;overflow:hidden;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:10px}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:var(--panel-3);border-radius:8px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* живой градиентный свет за стеклом */
+.aura{position:fixed;inset:-20% -10%;z-index:0;pointer-events:none;filter:blur(70px);opacity:.95}
+.aura i{position:absolute;display:block;border-radius:50%}
+.aura .a1{width:52vw;height:52vw;left:-6%;top:-14%;background:var(--mesh-a);animation:drift1 26s ease-in-out infinite}
+.aura .a2{width:46vw;height:46vw;right:-8%;bottom:-16%;background:var(--mesh-b);animation:drift2 32s ease-in-out infinite}
+.aura .a3{width:34vw;height:34vw;left:42%;top:46%;background:var(--mesh-c);animation:drift3 38s ease-in-out infinite}
+@keyframes drift1{0%,100%{transform:none}50%{transform:translate(9vw,7vh) scale(1.12)}}
+@keyframes drift2{0%,100%{transform:none}50%{transform:translate(-8vw,-6vh) scale(1.1)}}
+@keyframes drift3{0%,100%{transform:none}50%{transform:translate(-6vw,5vh) scale(1.18)}}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.01ms!important;transition-duration:.01ms!important}
+  .aura i{animation:none!important}
+}
+
+/* ===================== каркас ===================== */
+.shell{position:relative;z-index:1;height:100%;display:grid;grid-template-columns:74px minmax(0,1fr);gap:12px;padding:12px}
+
+.rail{
+  /* backdrop-filter создаёт контекст наложения, поэтому подсказки и меню
+     обликов рисуются внутри него — панель должна быть выше соседних. */
+  position:relative;z-index:50;
+  display:flex;flex-direction:column;align-items:center;gap:7px;padding:14px 0 16px;
+  background:var(--panel);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));
+  border:1px solid var(--brd);border-radius:24px;box-shadow:var(--sh), var(--hl);
+}
+.rlogo{
+  width:42px;height:42px;border-radius:15px;display:grid;place-items:center;color:var(--acc-ink);margin-bottom:12px;
+  background:linear-gradient(145deg, var(--acc-2), var(--acc));
+  box-shadow:0 6px 22px var(--glow), inset 0 1px 0 rgba(255,255,255,.55);
+}
+.rbtn{
+  width:48px;height:48px;border-radius:16px;border:1px solid transparent;background:none;cursor:pointer;
+  display:grid;place-items:center;color:var(--ink-3);position:relative;transition:.22s var(--ease);
+}
+.rbtn:hover{color:var(--ink);background:var(--panel-2);border-color:var(--brd)}
+.rbtn[aria-pressed="true"]{
+  color:var(--acc-ink);border-color:transparent;
+  background:linear-gradient(150deg, var(--acc-2), var(--acc));
+  box-shadow:0 8px 24px var(--glow), inset 0 1px 0 rgba(255,255,255,.45);
+}
+.rbtn .dotn{
+  position:absolute;top:6px;right:6px;min-width:19px;height:19px;padding:0 5px;border-radius:10px;
+  background:var(--red);color:#fff;font-family:var(--mono);font-size:10px;font-weight:600;
+  display:grid;place-items:center;border:2px solid var(--solid);
+  box-shadow:0 2px 10px rgba(255,95,82,.65);
+}
+.rspace{flex:1}
+.rtip{
+  position:absolute;left:58px;white-space:nowrap;background:var(--solid);color:var(--ink);
+  border:1px solid var(--brd);font-size:12px;padding:6px 11px;border-radius:10px;opacity:0;
+  pointer-events:none;transform:translateX(-6px);transition:.18s var(--ease);z-index:70;box-shadow:var(--sh);
+}
+.rbtn:hover .rtip{opacity:1;transform:none}
+
+.skinmenu{
+  position:absolute;left:58px;bottom:0;width:246px;z-index:80;padding:7px;
+  background:var(--solid);border:1px solid var(--brd-2);border-radius:18px;box-shadow:var(--sh-lg);
+}
+.skinitem{
+  display:flex;align-items:center;gap:11px;width:100%;text-align:left;cursor:pointer;
+  background:none;border:1px solid transparent;border-radius:13px;padding:9px 10px;transition:.16s var(--ease);
+}
+.skinitem:hover{background:var(--panel-2);border-color:var(--brd)}
+.skinitem[aria-pressed="true"]{background:var(--acc-soft);border-color:var(--acc)}
+.swatch{width:30px;height:30px;border-radius:10px;flex:none;border:1px solid var(--brd);box-shadow:var(--hl)}
+.skinitem b{display:block;font-size:13px;font-weight:600}
+.skinitem span{display:block;font-size:11.5px;color:var(--ink-3)}
+
+.view{min-width:0;min-height:0;display:none}
+.view.on{display:block}
+
+/* ===================== раздел «Обращения» ===================== */
+.inbox{height:100%;position:relative;display:grid;grid-template-columns:minmax(310px,356px) minmax(0,1fr) 316px;gap:12px}
+.pane{
+  min-height:0;display:flex;flex-direction:column;overflow:hidden;
+  background:var(--panel);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));
+  border:1px solid var(--brd);border-radius:24px;box-shadow:var(--sh), var(--hl);
+}
+.phead{padding:18px 18px 14px;flex:none;border-bottom:1px solid var(--brd)}
+.phead .t{display:flex;align-items:center;gap:10px}
+.phead h2{margin:0;font-size:19px;font-weight:800;letter-spacing:-.03em;flex:1}
+.stats{display:flex;gap:8px;margin-top:14px}
+.stat{flex:1;background:var(--panel-2);border:1px solid var(--brd);border-radius:15px;padding:10px 11px;box-shadow:var(--hl)}
+.stat b{display:block;font-size:22px;font-weight:800;letter-spacing:-.04em;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat span{color:var(--ink-3);font-size:10.5px;font-weight:500}
+.stat.hot b{color:var(--crit)}
+.stat.live b{color:var(--green)}
+
+.search{padding:14px 15px 10px;position:relative}
+.search svg{position:absolute;left:28px;top:50%;transform:translateY(-38%);color:var(--ink-3);pointer-events:none}
+.search input{
+  width:100%;background:var(--panel-2);border:1px solid var(--brd);border-radius:14px;
+  padding:11px 14px 11px 38px;font-size:13.5px;transition:.18s var(--ease);
+}
+.search input:focus{border-color:var(--acc);box-shadow:0 0 0 4px var(--acc-soft)}
+.search input::placeholder{color:var(--ink-3)}
+
+.filters{display:flex;gap:6px;padding:0 15px 12px;flex-wrap:wrap}
+.chip{
+  background:var(--panel-2);border:1px solid var(--brd);border-radius:999px;padding:5px 12px;
+  font-size:12px;font-weight:500;color:var(--ink-2);cursor:pointer;white-space:nowrap;transition:.18s var(--ease);
+}
+.chip:hover{color:var(--ink);border-color:var(--brd-2);transform:translateY(-1px)}
+.chip[aria-pressed="true"]{
+  background:linear-gradient(150deg, var(--acc-2), var(--acc));border-color:transparent;
+  color:var(--acc-ink);font-weight:600;box-shadow:0 5px 18px var(--glow);
+}
+.chip .n{font-family:var(--mono);font-size:11px;opacity:.72;margin-left:5px}
+
+.legend{display:flex;gap:13px;align-items:center;padding:0 18px 13px;font-size:10.5px;color:var(--ink-3)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:8px;height:8px;border-radius:50%;display:block}
+.legend .g{background:var(--green);box-shadow:0 0 8px var(--green)}
+.legend .o{background:var(--orange);box-shadow:0 0 8px var(--orange)}
+.legend .r{background:var(--red);box-shadow:0 0 8px var(--red)}
+
+.convs{list-style:none;margin:0;padding:8px 10px 14px;overflow-y:auto;flex:1;border-top:1px solid var(--brd)}
+.conv{
+  display:grid;grid-template-columns:46px minmax(0,1fr);gap:12px;padding:12px 13px;border-radius:18px;
+  cursor:pointer;position:relative;background:none;width:100%;border:1px solid transparent;text-align:left;
+  transition:.2s var(--ease);
+}
+.conv:hover{background:var(--panel-2);border-color:var(--brd);transform:translateY(-1px)}
+.conv[aria-current="true"]{
+  background:linear-gradient(135deg, var(--acc-soft), var(--panel-2) 72%);
+  border-color:var(--acc);box-shadow:0 8px 26px var(--glow), var(--hl);
+}
+.avawrap{position:relative;width:46px;height:46px;flex:none}
+.ava{
+  width:46px;height:46px;border-radius:16px;display:grid;place-items:center;
+  font-size:14px;font-weight:700;color:#fff;letter-spacing:-.01em;
+  box-shadow:0 6px 16px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.34);
+}
+.ch{
+  position:absolute;right:-5px;top:-5px;width:19px;height:19px;border-radius:7px;display:grid;place-items:center;
+  border:2px solid var(--solid);font-size:9px;font-weight:700;font-family:var(--mono);color:#fff;
+}
+.ch.tg{background:linear-gradient(145deg,#6ec0f5,var(--tg))}
+.ch.max{background:linear-gradient(145deg,#b79dff,var(--max))}
+.live{position:absolute;right:-3px;bottom:-3px;width:14px;height:14px;border-radius:50%;border:3px solid var(--solid)}
+.live.green{background:var(--green);box-shadow:0 0 12px var(--green)}
+.live.orange{background:var(--orange);box-shadow:0 0 12px var(--orange);animation:pulse 1.8s ease-in-out infinite}
+.live.red{background:var(--red);box-shadow:0 0 10px var(--red)}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.22);opacity:.75}}
+
+.conv .row1{display:flex;align-items:baseline;gap:8px}
+.conv .nm{font-weight:600;font-size:13.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.conv .tm{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);flex:none}
+.conv .prev{font-size:12.5px;color:var(--ink-2);margin-top:3px;line-height:1.42;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.conv.unread .nm{font-weight:800}
+.conv.unread .prev{color:var(--ink)}
+/* Статус, пометка о клиенте и теги в одну строку не помещаются — переносим */
+.conv .row3{display:flex;align-items:center;gap:6px;margin-top:9px;flex-wrap:wrap}
+.conv .row3 .cnt{margin-left:auto}
+.badge{font-size:10.5px;padding:3px 9px;border-radius:8px;font-weight:600;white-space:nowrap;border:1px solid transparent}
+.badge.new{background:var(--crit-soft);color:var(--crit);border-color:var(--crit)}
+.badge.open{background:var(--ok-soft);color:var(--ok);border-color:var(--ok)}
+.badge.waiting{background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
+.badge.closed{background:var(--panel-3);color:var(--ink-3);border-color:var(--brd)}
+.badge.archived{background:var(--panel-3);color:var(--ink-2);border-color:var(--brd)}
+.tag{font-size:10.5px;color:var(--ink-3);background:var(--panel-3);border:1px solid var(--brd);padding:3px 9px;border-radius:8px;font-weight:500}
+.conv .cnt{
+  margin-left:auto;font-family:var(--mono);font-size:11px;font-weight:700;
+  background:linear-gradient(150deg, var(--acc-2), var(--acc));color:var(--acc-ink);
+  border-radius:999px;padding:3px 9px;min-width:23px;text-align:center;box-shadow:0 4px 14px var(--glow);
+}
+.empty{padding:40px 24px;color:var(--ink-3);text-align:center;font-size:13px}
+.empty svg{display:block;margin:0 auto 12px;color:var(--brd-2)}
+
+/* -------- переписка -------- */
+.thead{display:flex;align-items:center;gap:11px;padding:14px 18px;border-bottom:1px solid var(--brd);flex:none}
+.back{display:grid}
+
+/* ===================== свёрнутый чат: тихий экран ===================== */
+.inbox[data-idle="1"]{grid-template-columns:minmax(310px,356px) minmax(0,1fr)}
+.inbox[data-idle="1"] .card,
+.inbox[data-idle="1"] .thead,
+.inbox[data-idle="1"] .composer{display:none}
+.idle{margin:auto;width:min(880px,100%);display:flex;flex-direction:column;align-items:center;text-align:center;padding:24px 8px}
+.orb{position:relative;width:110px;height:110px;border:0;padding:0;background:none;cursor:pointer;margin-bottom:22px;border-radius:50%}
+.orb i{position:absolute;inset:0;border-radius:50%;display:block}
+.orb i:nth-child(1){background:radial-gradient(circle at 35% 30%, var(--acc-2), var(--acc) 55%, transparent 72%);opacity:.55;animation:breathe 8s ease-in-out infinite}
+.orb i:nth-child(2){inset:14px;background:radial-gradient(circle at 60% 65%, var(--mesh-b), transparent 70%);filter:blur(6px);animation:breathe 8s ease-in-out infinite reverse}
+.orb i:nth-child(3){inset:34px;background:radial-gradient(circle at 40% 35%, rgba(255,255,255,.85), var(--acc-2) 60%);box-shadow:0 0 30px var(--glow);animation:breathe 8s ease-in-out infinite;animation-delay:-2s}
+.orb:hover i:nth-child(1){opacity:.8}
+.orb:focus-visible{outline-offset:6px}
+@keyframes breathe{0%,100%{transform:scale(.92)}50%{transform:scale(1.06)}}
+.idle h3{margin:0;font-size:22px;font-weight:800;letter-spacing:-.03em}
+.idle .idate{margin:4px 0 18px;font-size:12.5px;color:var(--ink-3)}
+.istats{display:flex;gap:8px;width:100%;margin-bottom:18px}
+.istats div{flex:1;padding:10px 8px;border-radius:14px;background:var(--panel-2);border:1px solid var(--brd)}
+.istats b{display:block;font-size:20px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.istats span{font-size:11px;color:var(--ink-3)}
+.ittl{align-self:flex-start;font-size:10px;text-transform:uppercase;letter-spacing:.1em;font-weight:700;color:var(--ink-3);margin:0 0 7px 4px}
+.iwait{display:flex;flex-direction:column;gap:6px;width:100%;margin-bottom:16px}
+.iw{display:flex;align-items:center;gap:11px;width:100%;padding:9px 12px;border-radius:14px;border:1px solid var(--brd);background:var(--panel-2);cursor:pointer;text-align:left;transition:.18s var(--ease)}
+.iw:hover{border-color:var(--brd-2);transform:translateY(-1px)}
+.iw .avawrap{flex:none}
+.iwt{flex:1;min-width:0}
+.iwt b{display:block;font-size:13px;font-weight:700}
+.iwt span{display:block;font-size:12px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.iw em{font-style:normal;font-family:var(--mono);font-size:10.5px;color:var(--warn);flex:none}
+.icalm{font-size:13px;color:var(--ok);margin-bottom:16px}
+/* сводка дня, оценка нагрузки и анекдот */
+.igrid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:12px;width:100%;margin-bottom:14px;text-align:left}
+.icol{display:flex;flex-direction:column;gap:12px;min-width:0}
+.icard{padding:14px 16px;border-radius:18px;background:var(--panel-2);border:1px solid var(--brd)}
+.icard .ittl{margin:0 0 9px}
+.icard .iwait{margin:0}
+.iload{border-color:color-mix(in srgb, var(--lc) 40%, var(--brd));background:linear-gradient(150deg, color-mix(in srgb, var(--lc) 12%, var(--panel-2)), var(--panel-2))}
+.ilh{display:flex;align-items:baseline;gap:10px}
+.ilh b{font-size:17px;font-weight:800;letter-spacing:-.02em;color:var(--lc)}
+.ilh span{font-size:10px;text-transform:uppercase;letter-spacing:.1em;font-weight:700;color:var(--ink-3)}
+.imeter{display:flex;gap:5px;margin:10px 0 9px}
+.imeter i{flex:1;height:8px;border-radius:5px;background:var(--panel-3);transition:.3s var(--ease)}
+.imeter i.on{background:var(--lc);box-shadow:0 0 10px color-mix(in srgb, var(--lc) 55%, transparent)}
+.iload.wait{--lc:var(--ink-3)!important}
+.iload p{margin:0;font-size:12px;color:var(--ink-2);line-height:1.5}
+.icells{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.icells div{padding:8px 10px;border-radius:12px;background:var(--panel-3)}
+.icells b{display:block;font-size:19px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.icells span{display:block;font-size:10.5px;color:var(--ink-3);line-height:1.3}
+.ijoke{align-self:start;display:flex;flex-direction:column;gap:10px;border-color:color-mix(in srgb, var(--warn) 28%, var(--brd));background:linear-gradient(165deg, color-mix(in srgb, var(--warn) 10%, var(--panel-2)), var(--panel-2) 70%)}
+.ijh{display:flex;align-items:center;gap:8px}
+.ijh b{font-size:13.5px;font-weight:800}
+.ijicon{width:26px;height:26px;border-radius:9px;display:grid;place-items:center;font-size:15px;color:var(--warn);background:color-mix(in srgb, var(--warn) 22%, transparent)}
+.ijn{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--ink-3)}
+.ijt{margin:0;flex:1;font-size:14px;line-height:1.6;white-space:pre-line;color:var(--ink)}
+.ijoke .ibtn{align-self:flex-start}
+@media (max-width:1100px){.igrid{grid-template-columns:minmax(0,1fr)}}
+.itip{border:1px dashed var(--brd-2);background:none;border-radius:14px;padding:10px 14px;font-size:12px;line-height:1.5;color:var(--ink-2);cursor:pointer;text-align:left;width:100%;transition:.18s var(--ease)}
+.itip:hover{border-color:var(--acc);color:var(--ink)}
+.itip span{display:inline-block;margin-right:8px;font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;font-weight:800;color:var(--acc)}
+.thead .who{flex:1;min-width:0}
+.thead .who .nm{font-weight:700;font-size:16px;letter-spacing:-.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.thead .who .sub{font-size:11px;color:var(--ink-3);display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:3px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:3px 9px;border-radius:8px;border:1px solid var(--brd);color:var(--ink-2);background:var(--panel-2)}
+.pill .dot{width:7px;height:7px;border-radius:50%}
+.dot.tg{background:var(--tg);box-shadow:0 0 7px var(--tg)}
+.dot.max{background:var(--max);box-shadow:0 0 7px var(--max)}
+.livepill{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:600;padding:3px 11px;border-radius:999px;border:1px solid transparent}
+.livepill i{width:8px;height:8px;border-radius:50%;display:block}
+.livepill.green{background:var(--ok-soft);color:var(--ok);border-color:var(--ok)}
+.livepill.green i{background:var(--green);box-shadow:0 0 9px var(--green)}
+.livepill.orange{background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
+.livepill.orange i{background:var(--orange);box-shadow:0 0 9px var(--orange);animation:pulse 1.8s ease-in-out infinite}
+.livepill.red{background:var(--crit-soft);color:var(--crit);border-color:var(--crit)}
+.livepill.red i{background:var(--red);box-shadow:0 0 9px var(--red)}
+
+.ibtn{
+  display:inline-flex;align-items:center;gap:7px;background:var(--panel-2);border:1px solid var(--brd);
+  border-radius:13px;padding:8px 13px;font-size:12.5px;font-weight:500;color:var(--ink-2);cursor:pointer;
+  transition:.18s var(--ease);white-space:nowrap;
+}
+.ibtn:hover{color:var(--ink);border-color:var(--brd-2);transform:translateY(-1px)}
+.iconbtn{background:none;border:1px solid transparent;border-radius:13px;padding:8px;color:var(--ink-3);cursor:pointer;display:grid;place-items:center;transition:.18s var(--ease)}
+.iconbtn:hover{color:var(--ink);background:var(--panel-2);border-color:var(--brd)}
+select.status{background:var(--panel-2);border:1px solid var(--brd);border-radius:13px;padding:8px 11px;font-size:12.5px;cursor:pointer}
+select.status option{background:var(--solid);color:var(--ink)}
+
+.msgs{flex:1;overflow-y:auto;padding:18px 22px 12px;display:flex;flex-direction:column;gap:3px;min-height:0}
+/* Колонка сообщений прокручивается, а не ужимает свои блоки:
+   без этого карточка анкеты схлопывается и значения обрезаются. */
+.msgs > *{flex:0 0 auto}
+.daysep{align-self:center;font-family:var(--mono);font-size:10.5px;color:var(--ink-3);background:var(--panel-3);border:1px solid var(--brd);padding:4px 13px;border-radius:999px;margin:16px 0 12px}
+.sys{align-self:center;text-align:center;font-size:11.5px;color:var(--ink-3);max-width:78%;padding:6px 15px;margin:8px 0;background:var(--panel-2);border-radius:12px;border:1px dashed var(--brd-2)}
+.m{max-width:min(78%,600px);display:flex;flex-direction:column;margin-top:2px;animation:rise .28s var(--ease) both}
+@keyframes rise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.m.in{align-self:flex-start}
+.m.out{align-self:flex-end;align-items:flex-end}
+.m.first{margin-top:14px}
+.bub{padding:12px 15px 11px;border-radius:20px;font-size:13.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word;border:1px solid transparent}
+.m.in .bub{background:var(--bub-in);border-bottom-left-radius:7px;border-color:var(--bub-in-brd)}
+.m.out .bub{
+  background:linear-gradient(150deg, var(--acc-2), var(--acc));color:var(--acc-ink);font-weight:500;
+  border-bottom-right-radius:7px;box-shadow:0 8px 24px var(--glow);
+}
+.meta{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:5px;padding:0 5px;font-variant-numeric:tabular-nums}
+.meta .ok{color:var(--ok)}
+.att{display:flex;align-items:center;gap:10px;margin-top:8px;padding:10px 12px;background:var(--panel-2);border:1px solid var(--brd);border-radius:15px;font-size:12px}
+.att .ic{width:31px;height:31px;border-radius:10px;display:grid;place-items:center;background:var(--panel-3);font-family:var(--mono);font-size:8.5px;font-weight:600;color:var(--ink-2);flex:none}
+.att .sz{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);margin-left:auto;white-space:nowrap}
+.typing{align-self:flex-start;display:flex;gap:5px;padding:14px 17px;margin-top:12px;background:var(--bub-in);border:1px solid var(--bub-in-brd);border-radius:20px;border-bottom-left-radius:7px}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--ink-3);animation:bl 1.1s infinite}
+.typing i:nth-child(2){animation-delay:.18s}
+.typing i:nth-child(3){animation-delay:.36s}
+@keyframes bl{0%,60%,100%{opacity:.25}30%{opacity:.95}}
+
+/* -------- анкета -------- */
+.intake{align-self:stretch;margin:6px 0 8px;border:1px solid var(--brd);border-radius:20px;overflow:hidden;background:var(--panel-2);box-shadow:var(--hl)}
+.intake header{display:flex;align-items:center;gap:9px;padding:11px 15px;font-size:12px;font-weight:700;color:var(--ok);background:var(--ok-soft);border-bottom:1px solid var(--brd)}
+.intake header .when{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--ink-3);font-weight:400}
+.intake dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin:0;padding:0}
+.intake .f{padding:11px 15px;border-right:1px solid var(--brd);border-bottom:1px solid var(--brd)}
+.intake .f:nth-child(2n){border-right:0}
+.intake .f:nth-last-child(-n+2){border-bottom:0}
+.intake .f dt{font-size:9.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-3);margin-bottom:3px;font-weight:600}
+.intake .f dd{margin:0;font-size:13.5px;font-weight:600;text-align:left}
+.intake .f dd.mono{font-family:var(--mono);font-size:12.5px}
+.intake .f dd.miss{color:var(--warn);font-weight:500}
+
+/* -------- поле ответа -------- */
+.composer{border-top:1px solid var(--brd);padding:13px 16px 15px;flex:none}
+.ctools{display:flex;gap:7px;align-items:center;margin-bottom:9px;position:relative}
+.hintk{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--ink-3)}
+.tpl{position:absolute;bottom:calc(100% + 10px);left:0;width:min(480px,100%);z-index:30;background:var(--solid);border:1px solid var(--brd-2);border-radius:20px;box-shadow:var(--sh-lg);overflow:hidden;padding:6px}
+.tpl button{display:block;width:100%;text-align:left;background:none;border:0;border-radius:14px;padding:11px 14px;font-size:12.5px;color:var(--ink-2);cursor:pointer;line-height:1.45}
+.tpl button:hover{background:var(--acc-soft);color:var(--ink)}
+.tpl b{display:block;color:var(--ink);font-size:12.5px;font-weight:700;margin-bottom:3px}
+.cbox{display:flex;gap:10px;align-items:flex-end}
+.cbox textarea{flex:1;resize:none;background:var(--panel-2);border:1px solid var(--brd);border-radius:18px;padding:13px 16px;font-size:13.5px;line-height:1.5;max-height:150px;min-height:50px;transition:.18s var(--ease)}
+.cbox textarea:focus{border-color:var(--acc);box-shadow:0 0 0 4px var(--acc-soft)}
+.send{
+  background:linear-gradient(150deg, var(--acc-2), var(--acc));color:var(--acc-ink);border:0;border-radius:18px;
+  padding:0 22px;height:50px;font-weight:700;font-size:13.5px;cursor:pointer;flex:none;
+  box-shadow:0 8px 26px var(--glow), inset 0 1px 0 rgba(255,255,255,.45);transition:.2s var(--ease);
+}
+.send:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 14px 34px var(--glow), inset 0 1px 0 rgba(255,255,255,.5)}
+.send:active:not(:disabled){transform:translateY(1px)}
+.send:disabled{opacity:.34;cursor:default;box-shadow:none}
+
+/* -------- карточка клиента -------- */
+.card .phead h2{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-3);font-weight:700}
+.cbody{overflow-y:auto;flex:1;padding:0 17px 20px}
+.cperson{display:flex;gap:12px;align-items:center;padding:17px 0 16px;border-bottom:1px solid var(--brd)}
+.cperson .avawrap{width:54px;height:54px}
+.cperson .ava{width:54px;height:54px;border-radius:19px;font-size:17px}
+.cperson .nm{font-weight:700;font-size:15.5px;letter-spacing:-.02em}
+.cperson .un{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+dl.info{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px 12px;padding:16px 0;font-size:12.5px;border-bottom:1px solid var(--brd)}
+dl.info dt{color:var(--ink-3)}
+dl.info dd{margin:0;text-align:right;font-weight:500;overflow-wrap:anywhere}
+dl.info dd.mono{font-family:var(--mono);font-size:11.5px}
+dl.info dd.due{color:var(--crit);font-weight:700}
+.sect{padding:16px 0;border-bottom:1px solid var(--brd)}
+.sect:last-child{border-bottom:0}
+.sect h3{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-3);margin:0 0 10px;font-weight:700}
+.folderbox{display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:16px;background:var(--panel-2);border:1px solid var(--brd);font-size:13px;font-weight:600}
+.tags{display:flex;flex-wrap:wrap;gap:7px}
+.tags .tag{cursor:default;display:inline-flex;align-items:center;gap:7px}
+.tags .tag button{background:none;border:0;color:var(--ink-3);cursor:pointer;padding:0;font-size:13px;line-height:1}
+.tags .tag button:hover{color:var(--crit)}
+.addtag{border-style:dashed;cursor:pointer;color:var(--ink-3);background:none}
+.addtag:hover{color:var(--acc);border-color:var(--acc)}
+.note{width:100%;min-height:82px;resize:vertical;background:var(--panel-2);border:1px solid var(--brd);border-radius:15px;padding:11px 13px;font-size:12.5px;line-height:1.5}
+.note:focus{border-color:var(--acc);box-shadow:0 0 0 4px var(--acc-soft)}
+.savedhint{font-family:var(--mono);font-size:10px;color:var(--ok);height:12px;margin-top:5px}
+
+/* ===================== раздел «Архив» ===================== */
+.archive{height:100%;overflow-y:auto;background:var(--panel);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));border:1px solid var(--brd);border-radius:24px;box-shadow:var(--sh), var(--hl);padding:30px 30px 48px}
+.awrap{max-width:1120px;margin:0 auto}
+.ahead{display:flex;align-items:flex-end;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.ahead h2{
+  margin:0;font-size:34px;font-weight:800;letter-spacing:-.045em;line-height:1.05;
+  background:linear-gradient(120deg, var(--ink) 20%, var(--acc) 130%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.ahead p{margin:7px 0 0;color:var(--ink-2);font-size:14px}
+.acount{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+
+.asearch{position:relative;margin-bottom:10px}
+.asearch svg.mag{position:absolute;left:22px;top:50%;transform:translateY(-50%);color:var(--ink-3);pointer-events:none}
+.asearch input{
+  width:100%;background:var(--panel-2);border:1px solid var(--brd);border-radius:22px;
+  padding:19px 54px 19px 56px;font-size:16px;font-weight:500;transition:.2s var(--ease);
+}
+.asearch input:focus{border-color:var(--acc);box-shadow:0 0 0 5px var(--acc-soft), 0 12px 34px var(--glow)}
+.asearch input::placeholder{color:var(--ink-3);font-weight:400}
+.asearch .clr{position:absolute;right:14px;top:50%;transform:translateY(-50%)}
+.ahint{font-size:12px;color:var(--ink-3);margin:0 0 26px;padding-left:6px}
+.ahint code{font-family:var(--sans);font-size:11.5px;font-weight:600;background:var(--panel-3);border:1px solid var(--brd);padding:4px 10px;border-radius:999px;cursor:pointer;transition:.16s var(--ease)}
+.ahint code:hover{border-color:var(--acc);color:var(--acc)}
+
+.secttl{display:flex;align-items:center;gap:11px;margin:30px 0 14px;font-size:10.5px;text-transform:uppercase;letter-spacing:.11em;color:var(--ink-3);font-weight:700}
+.secttl::after{content:"";flex:1;height:1px;background:var(--brd)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(266px,1fr));gap:12px}
+.fcard{
+  display:flex;align-items:center;gap:14px;padding:17px;border-radius:20px;cursor:pointer;text-align:left;
+  background:var(--panel-2);border:1px solid var(--brd);transition:.22s var(--ease);
+}
+.fcard:hover{transform:translateY(-3px);border-color:var(--brd-2);box-shadow:var(--sh)}
+.fcard.empty0{opacity:.52}
+.fi{width:46px;height:46px;border-radius:16px;flex:none;display:grid;place-items:center;color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.35)}
+.fcard .ft{flex:1;min-width:0}
+.fcard .ft b{display:block;font-size:14px;font-weight:700;letter-spacing:-.015em}
+.fcard .ft span{display:block;font-size:11.5px;color:var(--ink-3);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fcard .fc{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--ink-2);flex:none;background:var(--panel-3);border:1px solid var(--brd);border-radius:11px;padding:5px 11px}
+
+.rows{display:flex;flex-direction:column;gap:10px}
+.rrow{
+  display:grid;grid-template-columns:46px minmax(0,1fr) auto;gap:15px;align-items:flex-start;
+  padding:17px;border-radius:20px;cursor:pointer;text-align:left;width:100%;
+  background:var(--panel-2);border:1px solid var(--brd);transition:.22s var(--ease);
+}
+.rrow:hover{transform:translateY(-3px);border-color:var(--brd-2);box-shadow:var(--sh)}
+.rrow .rt{min-width:0}
+.rrow .rt .l1{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.rrow .rt .l1 b{font-size:14px;font-weight:700}
+.rrow .rt .q{font-size:13px;color:var(--ink-2);margin-top:7px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rrow .rt .why{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.rrow .rside{text-align:right;font-family:var(--mono);font-size:10.5px;color:var(--ink-3);white-space:nowrap}
+.score{display:block;margin-top:7px;font-family:var(--sans);font-size:10.5px;color:var(--acc);font-weight:700}
+mark{background:var(--mark);color:var(--mark-ink);border-radius:5px;padding:1px 3px;font-weight:700}
+.fchip{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:600;padding:3px 11px;border-radius:999px;border:1px solid var(--brd);background:var(--panel-3);color:var(--ink-2)}
+.fchip i{width:9px;height:9px;border-radius:4px;display:block}
+.fchip.more{padding:3px 9px;font-family:var(--mono)}
+.crumb{display:flex;align-items:center;gap:10px;margin-bottom:20px;font-size:13px;color:var(--ink-3)}
+.crumb button{background:none;border:0;color:var(--acc);cursor:pointer;padding:0;font-size:13px;font-weight:600}
+.crumb button:hover{text-decoration:underline}
+
+/* ===================== архив: календарь слева ===================== */
+.alayout{max-width:1240px;margin:0 auto}
+.alayout .awrap{max-width:none;margin:0;min-width:0}
+/* календарь живёт в левой панели: листок с числом, по клику — месяц */
+.rcal{position:relative}
+.calbtn{color:var(--ink-2)}
+.calmini{
+  display:flex;flex-direction:column;align-items:center;width:34px;border-radius:9px;overflow:hidden;
+  background:var(--solid);border:1px solid var(--brd-2);box-shadow:0 3px 10px rgba(0,0,0,.18);line-height:1;
+}
+.calmini i{
+  display:block;width:100%;font-style:normal;font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;
+  padding:3px 0 2px;text-align:center;color:#fff;background:linear-gradient(150deg, var(--crit), color-mix(in srgb, var(--crit) 70%, #000));
+}
+.calmini b{display:block;font-size:15px;font-weight:800;padding:3px 0 4px;color:var(--ink);font-variant-numeric:tabular-nums}
+.calbtn:hover .calmini,.calbtn[aria-expanded="true"] .calmini{transform:rotate(-4deg) scale(1.06)}
+.calmini{transition:.22s var(--ease)}
+.calbtn[aria-expanded="true"]{background:var(--panel-2);border-color:var(--brd)}
+.calbox{
+  position:absolute;left:58px;bottom:0;z-index:80;width:min(300px, calc(100vw - 84px));
+  display:flex;flex-direction:column;gap:12px;padding:14px;border-radius:22px;
+  background:var(--solid);border:1px solid var(--brd-2);box-shadow:var(--sh-lg);animation:pop .22s var(--ease);
+}
+.calhero{
+  display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:18px;color:var(--acc-ink);
+  background:linear-gradient(150deg, var(--acc-2), var(--acc));
+  box-shadow:0 10px 30px var(--glow), inset 0 1px 0 rgba(255,255,255,.45);position:relative;overflow:hidden;
+}
+.calhero::after{content:"";position:absolute;right:-30px;top:-40px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.16)}
+.calhero .cbig{font-size:54px;font-weight:800;letter-spacing:-.06em;line-height:.9;font-variant-numeric:tabular-nums}
+.calhero .cside{display:flex;flex-direction:column;line-height:1.25;position:relative;z-index:1}
+.calhero .cside b{font-size:15px;font-weight:800;letter-spacing:-.02em}
+.calhero .cside span{font-size:12.5px;opacity:.85}
+.calhero .cclock{font-style:normal;font-family:var(--mono);font-size:12px;margin-top:4px;opacity:.8}
+.calnav{display:flex;align-items:center;gap:4px}
+.calnav .iconbtn{font-size:20px;line-height:1;width:34px;height:34px;padding:0}
+.calttl{flex:1;background:none;border:0;cursor:pointer;font-size:14px;font-weight:800;letter-spacing:-.02em;border-radius:10px;padding:6px}
+.calttl:hover{color:var(--acc)}
+.calgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.calgrid .wd{text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);padding:2px 0 4px}
+.calgrid .wd.we{color:color-mix(in srgb, var(--crit) 70%, var(--ink-3))}
+.cd{
+  position:relative;aspect-ratio:1;border-radius:11px;border:1px solid transparent;background:none;cursor:pointer;
+  display:grid;place-items:center;font-size:12.5px;font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums;
+  transition:.16s var(--ease);isolation:isolate;
+}
+.cd.blank{cursor:default}
+.cd::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--acc);opacity:0;z-index:-1;transition:.16s var(--ease)}
+.cd.has::before{opacity:var(--heat, .2)}
+.cd.has{color:var(--ink);font-weight:800}
+.cd.we{color:color-mix(in srgb, var(--crit) 55%, var(--ink-2))}
+.cd:not(.blank):hover{border-color:var(--brd-2);transform:translateY(-1px)}
+.cd.today{border:2px solid var(--acc)}
+.cd.sel{color:var(--acc-ink);background:linear-gradient(150deg, var(--acc-2), var(--acc));box-shadow:0 6px 18px var(--glow)}
+.cd.sel::before{opacity:0}
+.cd .cdot{position:absolute;bottom:4px;width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.7}
+.calfoot{font-size:12px;color:var(--ink-3);padding:2px 4px;line-height:1.45}
+.calfoot b{color:var(--ink);font-size:14px}
+.ibtn.wide{width:100%;justify-content:center}
+
+/* ===================== строка: найти или спросить ===================== */
+.amodes{display:inline-flex;gap:4px;padding:4px;border-radius:16px;background:var(--panel-2);border:1px solid var(--brd);margin-bottom:10px}
+.amodes button{
+  display:inline-flex;align-items:center;gap:7px;border:0;background:none;cursor:pointer;border-radius:12px;
+  padding:8px 14px;font-size:12.5px;font-weight:700;color:var(--ink-3);transition:.18s var(--ease);
+}
+.amodes button:hover{color:var(--ink)}
+.amodes button[aria-pressed="true"]{color:var(--acc-ink);background:linear-gradient(150deg, var(--acc-2), var(--acc));box-shadow:0 6px 18px var(--glow)}
+.afield{position:relative}
+.asearch.ask input{border-color:color-mix(in srgb, var(--acc) 45%, var(--brd))}
+
+.askcard{
+  border-radius:22px;padding:20px 22px;margin:4px 0 26px;border:1px solid color-mix(in srgb, var(--acc) 30%, var(--brd));
+  background:linear-gradient(160deg, var(--acc-soft), var(--panel-2) 70%);box-shadow:var(--hl);animation:pop .26s var(--ease);
+}
+.askcard.intro b{display:block;font-size:16px;font-weight:800;letter-spacing:-.02em}
+.askcard.intro p{margin:5px 0 14px;font-size:13px;color:var(--ink-2);line-height:1.5}
+.askex{display:flex;flex-wrap:wrap;gap:8px}
+.askchip{
+  border:1px solid var(--brd);background:var(--panel-2);border-radius:999px;padding:7px 13px;font-size:12px;
+  font-weight:600;color:var(--ink-2);cursor:pointer;text-align:left;transition:.16s var(--ease);
+}
+.askchip:hover{border-color:var(--acc);color:var(--acc);transform:translateY(-1px)}
+.askq{display:flex;align-items:center;gap:10px;font-size:13.5px;font-weight:600;color:var(--ink-2)}
+.askq .qm{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;flex:none;font-weight:800;color:var(--acc-ink);background:linear-gradient(150deg, var(--acc-2), var(--acc))}
+.askload{margin-top:16px;font-size:13px;color:var(--ink-3);animation:bl 1.1s infinite}
+.askerr{margin-top:14px;font-size:13.5px;color:var(--ink-2);line-height:1.5}
+.askbig{display:flex;align-items:baseline;gap:12px;margin-top:10px;flex-wrap:wrap}
+.askbig b{
+  font-size:60px;font-weight:800;letter-spacing:-.05em;line-height:1;font-variant-numeric:tabular-nums;
+  background:linear-gradient(120deg, var(--ink) 10%, var(--acc) 120%);-webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.askbig span{font-size:16px;font-weight:700;color:var(--ink-2)}
+.asktitle{margin-top:12px;font-size:15px;font-weight:800;letter-spacing:-.02em}
+.askbars{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.abar{display:grid;grid-template-columns:minmax(110px,230px) minmax(0,1fr) 44px;gap:12px;align-items:center;font-size:12.5px}
+.abar .lbl{color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.abar .track{height:10px;border-radius:6px;background:var(--panel-3);overflow:hidden}
+.abar .track i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg, var(--acc), var(--acc-2));animation:grow .5s var(--ease)}
+@keyframes grow{from{width:0}}
+.abar b{font-family:var(--mono);font-size:12.5px;text-align:right}
+.asktbl{width:100%;border-collapse:collapse;margin-top:14px;font-size:12.5px}
+.asktbl th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);padding:6px 8px;border-bottom:1px solid var(--brd)}
+.asktbl td{padding:7px 8px;border-bottom:1px solid var(--brd);color:var(--ink-2)}
+.askmeta{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:14px;font-size:11.5px;color:var(--ink-3)}
+.askmeta .eng{margin-left:auto;font-family:var(--mono);font-size:10.5px;padding:3px 9px;border-radius:8px;border:1px solid var(--brd);background:var(--panel-2)}
+
+/* ===================== дерево папок ===================== */
+.ftree{display:flex;flex-direction:column;gap:12px}
+.fgroup{
+  border-radius:22px;padding:12px;
+  background:color-mix(in srgb, var(--fc) 7%, var(--panel-2));
+  border:1px solid color-mix(in srgb, var(--fc) 28%, var(--brd));
+}
+.fghead{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;text-align:left;padding:4px 4px 12px;border-radius:14px}
+button.fghead{cursor:pointer}
+button.fghead:hover b{color:var(--fc)}
+.fghead .ft{flex:1;min-width:0}
+.fghead .ft b{display:block;font-size:14.5px;font-weight:800;letter-spacing:-.02em;transition:.16s var(--ease)}
+.fghead .ft span{display:block;font-size:11.5px;color:var(--ink-3);margin-top:1px}
+.fghead .fc{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--ink-2);background:var(--panel-3);border:1px solid var(--brd);border-radius:10px;padding:4px 10px;flex:none}
+/* темы раздела — в один ряд, одинаковой ширины */
+.ftiles{display:flex;gap:7px}
+.ftiles .ftile{flex:1 1 0;min-width:0}
+.ftiles.inline{flex-wrap:wrap;margin-bottom:20px}
+.ftiles.inline .ftile{flex:1 1 170px}
+.ftile{
+  position:relative;min-height:56px;padding:12px 26px;border-radius:14px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  font-size:12.5px;font-weight:600;line-height:1.3;color:var(--ink);
+  background:color-mix(in srgb, var(--fc) 18%, var(--panel-2));
+  border:1px solid color-mix(in srgb, var(--fc) 34%, transparent);
+  transition:.18s var(--ease);
+}
+.ftile:hover{transform:translateY(-2px);background:color-mix(in srgb, var(--fc) 30%, var(--panel-2));box-shadow:0 8px 20px color-mix(in srgb, var(--fc) 24%, transparent)}
+.ftile.zero{opacity:.6}
+.ftile .tc{position:absolute;top:6px;right:8px;font-family:var(--mono);font-size:10px;color:var(--ink-3)}
+.ftile[aria-pressed="true"]{opacity:1;color:#fff;border-color:transparent;background:var(--fc);box-shadow:0 8px 24px color-mix(in srgb, var(--fc) 45%, transparent)}
+.ftile[aria-pressed="true"] .tc{color:rgba(255,255,255,.8)}
+.fundef{
+  display:flex;align-items:center;gap:13px;width:100%;margin-top:14px;padding:13px 16px;border-radius:20px;cursor:pointer;text-align:left;
+  border:1px dashed var(--brd-2);background:var(--panel-2);transition:.18s var(--ease);
+}
+.fundef:hover{border-color:var(--ink-3);transform:translateY(-1px)}
+.fundef[aria-pressed="true"]{border-style:solid;border-color:var(--acc);background:var(--acc-soft)}
+.fundef .ft{flex:1;min-width:0}
+.fundef .ft b{display:block;font-size:13.5px;font-weight:700}
+.fundef .ft span{display:block;font-size:11.5px;color:var(--ink-3);margin-top:2px}
+.fundef .fc{font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+
+/* то же дерево в окне «Куда отправить обращение» */
+.mbox.wide{width:min(880px,100%);max-height:min(92vh,960px)}
+.ftree.compact{gap:9px}
+/* Окно «Куда отправить»: всё на одном экране, без прокрутки.
+   Разделы — столбцами, цвет раздела только полоской сверху и точкой
+   у темы: спокойно для глаза, а семью всё равно видно сразу. */
+.mbox.wide{width:min(1280px,96vw);max-height:96vh}
+.mbox.wide .mhead{display:flex;align-items:center;gap:16px;padding:16px 20px 14px}
+.mbox.wide .mtitle{flex:1;min-width:0}
+.mbox.wide .mtitle h3{font-size:18px}
+.mbox.wide .mtitle p{margin:2px 0 0;font-size:12px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mbox.wide .msearch{position:relative;margin:0;width:min(260px,34vw);flex:none}
+.mbox.wide .msearch svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--ink-3);pointer-events:none}
+.mbox.wide .msearch input{padding:9px 12px 9px 34px;border-radius:12px;font-size:13px}
+.mbox.wide .folders{flex:0 1 auto;min-height:0;padding:14px 20px 6px;gap:0}
+.mbox.wide .ftree.compact{flex-direction:row;flex-wrap:wrap;align-items:stretch;gap:10px}
+.mbox.wide .ftree.compact .fgroup{
+  flex:1 1 150px;min-width:0;display:flex;flex-direction:column;padding:10px 8px 8px;border-radius:16px;
+  background:linear-gradient(180deg, color-mix(in srgb, var(--fc) 14%, var(--panel-2)), color-mix(in srgb, var(--fc) 6%, var(--panel-2)));
+  border:1px solid color-mix(in srgb, var(--fc) 32%, var(--brd));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 6px 20px color-mix(in srgb, var(--fc) 10%, transparent);
+}
+.mbox.wide .ftree.compact .fghead{align-items:center;gap:7px;padding:0 4px 8px;min-height:36px}
+.mbox.wide .ftree.compact .fi{width:26px;height:26px;border-radius:9px;flex:none}
+.mbox.wide .ftree.compact .fi svg{width:12px;height:12px}
+.mbox.wide .ftree.compact .fghead .ft b{font-size:12px;line-height:1.25;color:var(--ink)}
+.mbox.wide .ftree.compact .fghead .fc{font-size:10.5px;padding:1px 6px;border-radius:7px;background:var(--panel-3);border-color:var(--brd);color:var(--ink-2)}
+/* темы — цветные плитки раздела с мягкой подсветкой изнутри;
+   под курсором плитка загорается ярче и по ней проходит блик */
+.mbox.wide .ftree.compact .ftiles{flex-direction:column;gap:5px}
+.mbox.wide .ftree.compact .ftile{
+  flex:none;min-height:34px;padding:6px 24px;border-radius:11px;overflow:hidden;
+  justify-content:center;text-align:center;font-size:12px;font-weight:600;line-height:1.25;color:var(--ink);
+  background:color-mix(in srgb, var(--fc) 17%, var(--panel-2));
+  border:1px solid color-mix(in srgb, var(--fc) 38%, transparent);
+  box-shadow:inset 0 0 14px color-mix(in srgb, var(--fc) 22%, transparent), inset 0 1px 0 rgba(255,255,255,.07);
+  opacity:1;transform:none;
+}
+.mbox.wide .ftree.compact .ftile::after{
+  content:"";position:absolute;top:0;bottom:0;left:-60%;width:45%;pointer-events:none;
+  background:linear-gradient(100deg, transparent, rgba(255,255,255,.16), transparent);
+  transform:skewX(-18deg);transition:left .6s var(--ease);
+}
+.mbox.wide .ftree.compact .ftile:hover{
+  transform:translateY(-1px);
+  background:color-mix(in srgb, var(--fc) 28%, var(--panel-2));
+  border-color:color-mix(in srgb, var(--fc) 65%, transparent);
+  box-shadow:inset 0 0 16px color-mix(in srgb, var(--fc) 30%, transparent),
+             0 0 18px color-mix(in srgb, var(--fc) 42%, transparent);
+}
+.mbox.wide .ftree.compact .ftile:hover::after{left:120%}
+.mbox.wide .ftree.compact .ftile[aria-pressed="true"]{
+  color:#fff;font-weight:700;border-color:transparent;
+  background:linear-gradient(150deg, color-mix(in srgb, var(--fc) 80%, #fff), var(--fc));
+  box-shadow:0 0 0 1px color-mix(in srgb, var(--fc) 60%, #fff), 0 0 22px color-mix(in srgb, var(--fc) 60%, transparent);
+  animation:tileglow 2.6s ease-in-out infinite;
+}
+@keyframes tileglow{
+  0%,100%{box-shadow:0 0 0 1px color-mix(in srgb, var(--fc) 60%, #fff), 0 0 14px color-mix(in srgb, var(--fc) 45%, transparent)}
+  50%{box-shadow:0 0 0 1px color-mix(in srgb, var(--fc) 60%, #fff), 0 0 26px color-mix(in srgb, var(--fc) 70%, transparent)}
+}
+.mbox.wide .ftree.compact .ftile .tc{top:4px;right:7px;transform:none;font-size:9.5px}
+.mbox.wide .ftree.compact .ftile[aria-pressed="true"] .tc{color:rgba(255,255,255,.85)}
+.mbox.wide .ftree.compact .ftile[aria-pressed="true"]::before{content:"✓";position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:800}
+.mbox.wide .fdivide{display:none}
+.mbox.wide .fundef{margin-top:10px;padding:7px 12px;border-radius:12px;gap:10px}
+.mbox.wide .fundef .fi{width:24px;height:24px;border-radius:8px}
+.mbox.wide .fundef .fi svg{width:12px;height:12px}
+.mbox.wide .fundef .ft{display:flex;align-items:baseline;gap:10px}
+.mbox.wide .fundef .ft b{font-size:12.5px}
+.mbox.wide .fundef .ft span{margin:0}
+.mbox.wide .moodwrap{flex:none;display:flex;align-items:center;gap:14px;padding:12px 20px;margin-top:8px}
+.mbox.wide .moodwrap h4{margin:0;flex:none;font-size:12.5px;cursor:help}
+.mbox.wide .moods{flex:1;display:flex;flex-wrap:wrap;gap:6px}
+.mbox.wide .moodopt{flex:1 1 auto;width:auto;padding:6px 11px;border-radius:10px;align-items:center;gap:7px}
+.mbox.wide .moodopt i{margin-top:0}
+.mbox.wide .moodopt b{font-size:12px;white-space:nowrap}
+.mbox.wide .moodopt span{display:none}
+.mbox.wide footer{padding:12px 20px}
+.mbox.wide footer .btn{padding:10px 20px}
+@media (max-width:760px){
+  .mbox.wide .mhead{flex-wrap:wrap}
+  .mbox.wide .msearch{order:3;width:100%}
+  .mbox.wide .folders{flex:1 1 auto}
+  .mbox.wide .moodwrap{flex-direction:column;align-items:stretch}
+}
+/* узко — темы переносятся на следующую строку, а не сжимаются в нечитаемое */
+@media (max-width:900px){.ftiles{flex-wrap:wrap}.ftiles .ftile{flex:1 1 140px}}
+.ftree.compact .fgroup{padding:10px;border-radius:18px}
+.ftree.compact .fghead{padding:2px 2px 9px;gap:10px}
+.ftree.compact .fghead .ft b{font-size:13px}
+.ftree.compact .fghead .ft span{display:none}
+.ftree.compact .fi{width:30px;height:30px;border-radius:10px}
+.ftree.compact .ftile{min-height:44px;padding:9px 16px;font-size:12px;border-radius:12px}
+.mpicked{margin-right:auto;align-self:center;font-size:12.5px;font-weight:600;color:var(--ink-2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* анкета идёт параллельно с вопросом — её состояние видно по цвету */
+.intake.st-active header{color:var(--warn)}
+.intake.st-skipped header,.intake.st-none header{color:var(--ink-3)}
+.sstep.client .snum{background:var(--acc-soft);color:var(--acc);border-color:var(--acc)}
+.sstep.client .sbub{background:var(--acc-soft);border-color:color-mix(in srgb, var(--acc) 35%, transparent);border-bottom-left-radius:20px;border-bottom-right-radius:7px}
+.sbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.sbtn{font-size:11.5px;font-weight:700;padding:5px 11px;border-radius:10px;border:1px solid var(--brd-2);background:var(--panel-2);color:var(--acc)}
+
+@media (max-width:1180px){
+}
+@media (max-width:640px){
+  .abar{grid-template-columns:minmax(80px,120px) minmax(0,1fr) 36px}
+  .askbig b{font-size:46px}
+  .amodes{display:flex}
+  .amodes button{flex:1;justify-content:center;padding:8px 8px}
+}
+
+/* ===================== окна ===================== */
+.modal{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:20px;background:rgba(4,8,16,.6);backdrop-filter:blur(8px)}
+.mbox{
+  width:min(560px,100%);max-height:min(86vh,740px);display:flex;flex-direction:column;
+  background:var(--solid);border:1px solid var(--brd-2);border-radius:28px;box-shadow:var(--sh-lg);
+  overflow:hidden;animation:pop .26s var(--ease);
+}
+@keyframes pop{from{transform:translateY(16px) scale(.97);opacity:0}to{transform:none;opacity:1}}
+.mbox header{display:flex;align-items:center;gap:11px;padding:22px 24px 16px;border-bottom:1px solid var(--brd)}
+.mbox h3{margin:0;font-size:19px;font-weight:800;letter-spacing:-.03em;flex:1}
+.msub{margin:16px 24px 0;font-size:13px;color:var(--ink-2);line-height:1.55}
+.msearch{margin:14px 24px 6px}
+.msearch input{width:100%;background:var(--panel-2);border:1px solid var(--brd);border-radius:15px;padding:12px 15px;font-size:13.5px}
+.msearch input:focus{border-color:var(--acc);box-shadow:0 0 0 4px var(--acc-soft)}
+.folders{overflow-y:auto;padding:12px 24px 8px;display:flex;flex-direction:column;gap:8px;flex:1}
+.fold{display:flex;align-items:center;gap:13px;width:100%;text-align:left;cursor:pointer;padding:13px 15px;border-radius:18px;border:1px solid var(--brd);background:var(--panel-2);transition:.18s var(--ease)}
+.fold:hover{border-color:var(--brd-2);transform:translateY(-1px)}
+.fold[aria-pressed="true"]{border-color:var(--acc);background:var(--acc-soft);box-shadow:0 8px 24px var(--glow)}
+.fold .fi{width:38px;height:38px;border-radius:13px}
+.fold .ft{flex:1;min-width:0}
+.fold .ft b{display:block;font-size:13.5px;font-weight:700}
+.fold .ft span{display:block;font-size:11.5px;color:var(--ink-3);margin-top:2px}
+.fold .fc{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);flex:none}
+.fdivide{display:flex;align-items:center;gap:11px;margin:11px 0 4px;font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.1em;font-weight:700}
+.fdivide::before,.fdivide::after{content:"";height:1px;background:var(--brd);flex:1}
+.fold.fallback{border-style:dashed}
+.mbox footer{display:flex;gap:10px;justify-content:flex-end;padding:17px 24px;border-top:1px solid var(--brd)}
+.btn{border-radius:16px;padding:12px 22px;font-size:13.5px;font-weight:700;cursor:pointer;border:1px solid var(--brd);background:var(--panel-2);color:var(--ink-2);transition:.18s var(--ease)}
+.btn:hover{color:var(--ink);border-color:var(--brd-2)}
+.btn.primary{border-color:transparent;color:var(--acc-ink);background:linear-gradient(150deg, var(--acc-2), var(--acc));box-shadow:0 8px 26px var(--glow)}
+.btn.primary:hover:not(:disabled){transform:translateY(-2px)}
+.btn.primary:disabled{opacity:.36;cursor:default;box-shadow:none;transform:none}
+
+.script{overflow-y:auto;padding:18px 24px 10px;display:flex;flex-direction:column;gap:11px}
+.sstep{display:flex;gap:12px;align-items:flex-start}
+.snum{width:26px;height:26px;border-radius:10px;flex:none;display:grid;place-items:center;margin-top:4px;font-family:var(--mono);font-size:11px;font-weight:600;background:var(--panel-3);color:var(--ink-2);border:1px solid var(--brd)}
+.sbub{background:var(--bub-in);border:1px solid var(--bub-in-brd);border-radius:20px;border-bottom-left-radius:7px;padding:13px 16px;font-size:13px;line-height:1.5;flex:1}
+.sbub .ans{margin-top:9px;padding-top:9px;border-top:1px dashed var(--brd-2);font-family:var(--mono);font-size:11.5px;color:var(--ink-3)}
+.sbub .ans b{color:var(--ok);font-weight:600}
+.snote{margin:14px 24px 0;padding:13px 15px;border-radius:16px;background:var(--warn-soft);border:1px solid var(--warn);font-size:12.5px;color:var(--ink-2);line-height:1.5}
+
+/* ===================== пометки о клиенте =====================
+   У каждой пометки свой цвет и своё движение: набор узнаётся боковым
+   зрением, ещё до того как менеджер прочитал подпись. Цвета идут
+   шкалой от лёгкого собеседника к тяжёлому — зелёный, голубой,
+   индиго, янтарь, коралл, алый. */
+@keyframes mCalm{0%,100%{transform:scale(1);opacity:.88}50%{transform:scale(1.22);opacity:1}}
+@keyframes mTalk{0%,100%{transform:translateY(0)}25%{transform:translateY(-3px)}50%{transform:translateY(0)}75%{transform:translateY(-1.5px)}}
+@keyframes mThink{0%,100%{opacity:.32;transform:scale(.84)}50%{opacity:1;transform:scale(1.12)}}
+@keyframes mArgue{0%,100%{transform:translateX(0)}15%{transform:translateX(-2.5px)}30%{transform:translateX(2.5px)}45%{transform:translateX(-1.5px)}60%{transform:translateX(1.5px)}75%{transform:translateX(0)}}
+@keyframes mTwitch{0%,80%,100%{transform:none}84%{transform:translateX(-3px) rotate(-9deg)}89%{transform:translateX(3px) rotate(9deg)}94%{transform:translateX(-1px) rotate(-3deg)}}
+@keyframes mAlarm{0%,100%{transform:scale(1);filter:brightness(1)}50%{transform:scale(1.26);filter:brightness(1.4)}}
+
+[data-mood="calm"]     .mo{animation:mCalm 3.2s ease-in-out infinite}
+[data-mood="talker"]   .mo{animation:mTalk 1.25s ease-in-out infinite}
+[data-mood="slow"]     .mo{animation:mThink 2.6s ease-in-out infinite}
+[data-mood="arguer"]   .mo{animation:mArgue 1.9s ease-in-out infinite}
+[data-mood="touchy"]   .mo{animation:mTwitch 4.2s ease-in-out infinite}
+[data-mood="negative"] .mo{animation:mAlarm 1.05s ease-in-out infinite}
+
+.moodchip{
+  display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:600;
+  padding:3px 9px;border-radius:8px;border:1px solid var(--mc);color:var(--mc);
+  background:color-mix(in srgb, var(--mc) 14%, transparent);white-space:nowrap;
+}
+.moodchip i{width:7px;height:7px;border-radius:50%;background:var(--mc);flex:none}
+
+/* плашка над перепиской — первое, что видит менеджер */
+.moodbar{
+  display:flex;align-items:flex-start;gap:12px;margin:2px 0 10px;padding:13px 15px;
+  border-radius:18px;border:1px solid var(--mc);
+  background:color-mix(in srgb, var(--mc) 11%, transparent);
+  animation:rise .3s var(--ease) both;
+}
+.moodbar .mi{
+  width:34px;height:34px;border-radius:12px;flex:none;display:grid;place-items:center;
+  background:var(--mc);color:#fff;font-weight:800;font-size:15px;
+  box-shadow:0 5px 16px color-mix(in srgb, var(--mc) 55%, transparent);
+}
+.moodbar .mt{flex:1;min-width:0}
+.moodbar .mt b{display:block;font-size:13.5px;font-weight:700;color:var(--mc)}
+.moodbar .mt span{display:block;font-size:12.5px;color:var(--ink-2);margin-top:2px;line-height:1.45}
+.moodbar .mw{font-family:var(--mono);font-size:10px;color:var(--ink-3);white-space:nowrap;margin-top:3px}
+
+/* выбор пометки в окне архивации */
+.moodwrap{padding:16px 24px 4px;border-top:1px solid var(--brd);margin-top:10px}
+.moodwrap h4{margin:0 0 3px;font-size:13.5px;font-weight:700}
+.moodwrap p{margin:0 0 11px;font-size:12px;color:var(--ink-3)}
+.moods{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.moodopt{
+  display:flex;align-items:flex-start;gap:9px;text-align:left;cursor:pointer;padding:10px 11px;
+  border-radius:14px;border:1px solid var(--brd);background:var(--panel-2);transition:.16s var(--ease);
+}
+.moodopt:hover{border-color:var(--brd-2);transform:translateY(-1px)}
+.moodopt[aria-pressed="true"]{border-color:var(--mc);background:color-mix(in srgb, var(--mc) 14%, transparent)}
+.moodopt i{width:9px;height:9px;border-radius:50%;background:var(--mc);flex:none;margin-top:4px}
+.moodopt b{display:block;font-size:12.5px;font-weight:700;line-height:1.3}
+.moodopt span{display:block;font-size:11px;color:var(--ink-3);margin-top:2px;line-height:1.35}
+
+/* ===================== база клиентов ===================== */
+.ctable{display:flex;flex-direction:column;gap:10px}
+.crow{
+  display:grid;grid-template-columns:50px minmax(0,1.6fr) minmax(0,1.1fr) auto;gap:16px;align-items:center;
+  padding:15px 18px;border-radius:20px;cursor:pointer;text-align:left;width:100%;
+  background:var(--panel-2);border:1px solid var(--brd);transition:.22s var(--ease);
+}
+.crow:hover{transform:translateY(-3px);border-color:var(--brd-2);box-shadow:var(--sh)}
+.crow .c1 b{display:block;font-size:14.5px;font-weight:700;letter-spacing:-.015em}
+.crow .c1 span{display:block;font-size:12px;color:var(--ink-3);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crow .c2{display:flex;flex-direction:column;gap:5px;align-items:flex-start;min-width:0}
+.crow .c3{text-align:right;font-family:var(--mono);font-size:10.5px;color:var(--ink-3);white-space:nowrap}
+.crow .c3 b{display:block;font-family:var(--sans);font-size:17px;font-weight:800;color:var(--ink);letter-spacing:-.03em}
+.kv{font-family:var(--mono);font-size:11.5px;color:var(--ink-2)}
+
+.profile{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:16px;align-items:start}
+.pcard{background:var(--panel-2);border:1px solid var(--brd);border-radius:22px;padding:20px}
+.pcard .top{display:flex;gap:13px;align-items:center;padding-bottom:16px;border-bottom:1px solid var(--brd)}
+.pcard .top .avawrap{width:56px;height:56px}
+.pcard .top .ava{width:56px;height:56px;border-radius:19px;font-size:18px}
+.pcard .top b{display:block;font-size:16px;font-weight:700;letter-spacing:-.02em}
+.pcard .top span{display:block;font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-top:2px}
+.pcard dl.info{border-bottom:0;padding-bottom:6px}
+.pmoods{display:flex;flex-direction:column;gap:7px;margin-top:4px}
+@media (max-width:900px){.profile{grid-template-columns:minmax(0,1fr)}.moods{grid-template-columns:minmax(0,1fr)}}
+
+/* прикреплённый файл перед отправкой */
+.pending{
+  display:flex;align-items:center;gap:10px;margin-bottom:9px;padding:9px 12px;
+  border-radius:14px;border:1px dashed var(--acc);background:var(--acc-soft);font-size:12.5px;
+}
+.pending .pn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.pending .ps{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+.pending .px{background:none;border:0;color:var(--ink-3);cursor:pointer;font-size:15px;line-height:1;padding:0 2px}
+.pending .px:hover{color:var(--crit)}
+.pending .thumb{width:34px;height:34px;border-radius:9px;object-fit:cover;flex:none;border:1px solid var(--brd)}
+.sending{opacity:.55;pointer-events:none}
+
+/* опасное действие */
+.ibtn.danger{color:var(--crit);border-color:color-mix(in srgb,var(--crit) 35%,transparent)}
+.ibtn.danger:hover{background:var(--crit-soft);border-color:var(--crit);color:var(--crit)}
+.btn.danger{
+  border-color:transparent;color:#fff;
+  background:linear-gradient(150deg, color-mix(in srgb,var(--crit) 82%,#fff), var(--crit));
+  box-shadow:0 8px 26px color-mix(in srgb,var(--crit) 45%,transparent);
+}
+.btn.danger:hover{transform:translateY(-2px)}
+.mbox.narrow{width:min(470px,100%)}
+.dbody{padding:18px 24px 4px;display:flex;flex-direction:column;gap:9px}
+.drow{display:flex;align-items:baseline;gap:10px;font-size:13.5px}
+.drow dt{color:var(--ink-3);min-width:104px}
+.drow dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.dwarn{
+  margin:16px 24px 0;padding:13px 15px;border-radius:16px;font-size:12.5px;line-height:1.5;
+  background:var(--crit-soft);border:1px solid var(--crit);color:var(--ink-2);
+}
+
+/* вложения */
+.shotwrap{display:block;margin-top:9px;line-height:0;border-radius:16px;overflow:hidden;
+  border:1px solid var(--brd);max-width:min(340px,100%);transition:.2s var(--ease)}
+.shotwrap:hover{transform:translateY(-2px);box-shadow:var(--sh);border-color:var(--acc)}
+.shot{display:block;width:100%;height:auto;max-height:340px;object-fit:cover}
+a.att{text-decoration:none;color:inherit}
+a.att:hover{border-color:var(--acc)}
+
+/* ===================== крупные экраны =====================
+   База свёрстана под ~1400px. На широком мониторе те же 14px
+   выглядят мелко, поэтому с ростом окна растёт и интерфейс. */
+@media (min-width:1500px){
+  body{font-size:15px}
+  .shell{grid-template-columns:84px minmax(0,1fr);gap:14px;padding:14px}
+  .rlogo{width:46px;height:46px;border-radius:16px}
+  .rbtn{width:54px;height:54px;border-radius:18px}
+  .inbox{grid-template-columns:minmax(348px,400px) minmax(0,1fr) 356px;gap:14px}
+
+  .phead{padding:20px 20px 16px}
+  .phead h2{font-size:21px}
+  .stat{padding:12px 13px;border-radius:17px}
+  .stat b{font-size:26px}
+  .stat span{font-size:11.5px}
+  .search input{font-size:14.5px;padding:12px 15px 12px 40px}
+  .search svg{left:31px}
+  .chip{font-size:13px;padding:5px 13px}
+  .legend{font-size:11.5px;padding:0 20px 14px}
+
+  .conv{grid-template-columns:52px minmax(0,1fr);gap:14px;padding:14px 16px}
+  .avawrap{width:52px;height:52px}
+  .ava{width:52px;height:52px;border-radius:18px;font-size:15px}
+  .conv .nm{font-size:14.5px}
+  .conv .prev{font-size:13.5px}
+  .conv .tm{font-size:11.5px}
+  .badge,.tag,.moodchip{font-size:11.5px;padding:3px 10px}
+
+  .thead{padding:16px 22px}
+  .thead .who .nm{font-size:19px}
+  .thead .who .sub{font-size:12px}
+  .livepill,.pill{font-size:12px;padding:4px 11px}
+  .ibtn,select.status{font-size:13.5px;padding:9px 15px;border-radius:14px}
+
+  .msgs{padding:24px 32px 14px}
+  .m{max-width:min(70%,780px)}
+  .bub{font-size:15.5px;padding:14px 18px 13px;border-radius:22px}
+  .meta{font-size:11px}
+  .sys{font-size:12.5px;padding:7px 18px}
+  .daysep{font-size:11.5px;padding:5px 15px}
+  .shotwrap{max-width:min(420px,100%)}
+  .shot{max-height:420px}
+
+  .intake .f{padding:14px 18px}
+  .intake .f dt{font-size:10.5px}
+  .intake .f dd{font-size:15px}
+  .intake header{font-size:13px;padding:13px 18px}
+
+  .composer{padding:16px 20px 18px}
+  .cbox textarea{font-size:15.5px;min-height:58px;padding:16px 19px;border-radius:20px}
+  .send{height:58px;font-size:15px;padding:0 26px;border-radius:20px}
+  .hintk{font-size:11.5px}
+
+  .card .phead h2{font-size:12px}
+  .cperson .nm{font-size:17px}
+  .cperson .un{font-size:12px}
+  dl.info{font-size:13.5px;gap:11px 14px}
+  dl.info dd.mono{font-size:12.5px}
+  .sect h3{font-size:11px}
+  .note{font-size:13.5px}
+
+  .moodbar{padding:16px 18px;border-radius:22px}
+  .moodbar .mi{width:40px;height:40px;font-size:18px;border-radius:14px}
+  .moodbar .mt b{font-size:15px}
+  .moodbar .mt span{font-size:13.5px}
+  .moodopt b{font-size:13.5px}
+  .moodopt span{font-size:12px}
+
+  .archive{padding:36px 36px 56px}
+  .ahead h2{font-size:40px}
+  .ahead p{font-size:15px}
+  .asearch input{font-size:17px;padding:22px 58px 22px 62px}
+  .asearch svg.mag{left:26px}
+  .ahint{font-size:13px}
+  .secttl{font-size:11.5px}
+  .fcard{padding:19px}
+  .fcard .ft b{font-size:15px}
+  .fcard .ft span{font-size:12.5px}
+  .fi{width:50px;height:50px;border-radius:18px}
+  .crow{padding:18px 20px;grid-template-columns:56px minmax(0,1.6fr) minmax(0,1.1fr) auto}
+  .crow .c1 b{font-size:16px}
+  .crow .c1 span{font-size:13px}
+  .kv{font-size:12.5px}
+  .crow .c3 b{font-size:19px}
+  .rrow .rt .l1 b{font-size:15px}
+  .rrow .rt .q{font-size:14px}
+
+  .mbox{width:min(620px,100%)}
+  .mbox h3{font-size:21px}
+  .msub{font-size:13.5px}
+  .fold .ft b{font-size:14.5px}
+  .fold .ft span{font-size:12.5px}
+  .btn{font-size:14.5px;padding:13px 24px}
+}
+
+@media (min-width:2000px){
+  body{font-size:16px}
+  .inbox{grid-template-columns:minmax(390px,450px) minmax(0,1fr) 390px}
+  .awrap{max-width:1440px}
+  .conv .nm{font-size:15.5px}
+  .conv .prev{font-size:14.5px}
+  .thead .who .nm{font-size:21px}
+  .m{max-width:min(64%,900px)}
+  .bub{font-size:16.5px}
+  .stat b{font-size:29px}
+  .ahead h2{font-size:46px}
+  .shotwrap{max-width:min(500px,100%)}
+  .shot{max-height:500px}
+  .cbox textarea{font-size:16.5px;min-height:62px}
+  .send{height:62px;font-size:16px}
+}
+
+/* ===================== адаптив ===================== */
+@media (max-width:1180px){
+  .inbox{grid-template-columns:minmax(296px,340px) minmax(0,1fr)}
+  .card{position:absolute;top:0;bottom:0;right:0;width:318px;z-index:40}
+  .inbox:not([data-card="open"]) .card{display:none}
+}
+@media (max-width:820px){
+  .inbox[data-idle="1"]{grid-template-columns:minmax(0,1fr)}
+  .shell{grid-template-columns:60px minmax(0,1fr);gap:8px;padding:8px}
+  .rbtn{width:42px;height:42px;border-radius:14px}
+  .rlogo{width:38px;height:38px;border-radius:13px}
+  .inbox{grid-template-columns:minmax(0,1fr)}
+  .inbox[data-view="list"] .thread{display:none}
+  .inbox[data-view="thread"] .list{display:none}
+  .card{width:min(320px,92%)}
+  .back{display:grid}
+  .m{max-width:90%}
+  .ibtn span{display:none}
+  .archive{padding:20px 16px 36px;border-radius:20px}
+  .ahead h2{font-size:25px}
+  .asearch input{padding:15px 46px 15px 48px;font-size:15px}
+  .intake dl{grid-template-columns:minmax(0,1fr)}
+  .intake .f{border-right:0}
+  .intake .f:nth-last-child(2){border-bottom:1px solid var(--brd)}
+  .skinmenu{left:auto;right:-250px}
+}
+</style>
+
+<div class="aura" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
+
+<div class="shell">
+
+  <nav class="rail" aria-label="Разделы">
+    <span class="rlogo" aria-hidden="true">
+      <svg width="21" height="21" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2.4 11.3L6 6l3 3.4 4.6-6.1"/>
+      </svg>
+    </span>
+
+    <button class="rbtn" id="navInbox" aria-pressed="true">
+      <svg width="21" height="21" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+        <path d="M2.6 10.4h3.6l1.2 2h5.2l1.2-2h3.6"/>
+        <path d="M3.9 4.4h12.2l1.3 6v4.2a1 1 0 0 1-1 1H3.6a1 1 0 0 1-1-1v-4.2z"/>
+      </svg>
+      <span class="dotn" id="inboxBadge">0</span>
+      <span class="rtip">Обращения</span>
+    </button>
+
+    <button class="rbtn" id="navClients" aria-pressed="false">
+      <svg width="21" height="21" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+        <circle cx="8" cy="7" r="2.9"/>
+        <path d="M2.6 16.4c0-3 2.4-4.6 5.4-4.6s5.4 1.6 5.4 4.6"/>
+        <path d="M13.6 4.6a2.7 2.7 0 0 1 0 5M15 11.6c1.7.5 2.8 1.8 2.8 4"/>
+      </svg>
+      <span class="rtip">База клиентов</span>
+    </button>
+
+    <button class="rbtn" id="navArchive" aria-pressed="false">
+      <svg width="21" height="21" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+        <rect x="2.4" y="3.2" width="15.2" height="3.6" rx="1"/>
+        <path d="M3.8 6.8h12.4v9a1 1 0 0 1-1 1H4.8a1 1 0 0 1-1-1v-9z"/>
+        <path d="M8 10.2h4"/>
+      </svg>
+      <span class="rtip">Архив по папкам</span>
+    </button>
+
+    <button class="rbtn" id="navIntake" aria-pressed="false">
+      <svg width="21" height="21" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+        <rect x="4" y="2.6" width="12" height="14.8" rx="1.6"/>
+        <path d="M7.2 6.6h5.6M7.2 9.8h5.6M7.2 13h3.2"/>
+      </svg>
+      <span class="rtip">Анкета перед вопросом</span>
+    </button>
+
+    <span class="rspace"></span>
+
+    <div class="rcal">
+      <button class="rbtn calbtn" id="calBtn" aria-haspopup="true" aria-expanded="false">
+        <span class="calmini" aria-hidden="true"><i id="calMiniM">сен</i><b id="calMiniD">1</b></span>
+        <span class="rtip">Календарь</span>
+      </button>
+      <div class="calbox" id="calBox" role="dialog" aria-label="Календарь" hidden></div>
+    </div>
+
+    <button class="rbtn" id="themeBtn" aria-haspopup="true">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="10" cy="10" r="7.2"/><path d="M10 2.8v14.4M4.9 4.9l10.2 10.2"/>
+      </svg>
+      <span class="rtip">Облик интерфейса</span>
+      <div class="skinmenu" id="skinMenu" hidden></div>
+    </button>
+  </nav>
+
+  <!-- ============ ОБРАЩЕНИЯ ============ -->
+  <div class="view on" id="viewInbox">
+    <div class="inbox" id="inbox" data-view="list">
+
+      <aside class="pane list">
+        <div class="phead">
+          <div class="t">
+            <h2>Обращения</h2>
+            <span class="badge archived" id="demoTag">демо</span>
+          </div>
+          <div class="stats" id="stats"></div>
+        </div>
+
+        <div class="search">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="7" cy="7" r="4.4"/><path d="M10.4 10.4L14 14"/>
+          </svg>
+          <input id="q" type="search" placeholder="Имя, текст, лицензия" autocomplete="off">
+        </div>
+
+        <nav class="filters" id="filters" aria-label="Фильтры обращений"></nav>
+
+        <div class="legend">
+          <span><i class="g"></i>в чате</span>
+          <span><i class="o"></i>печатает</span>
+          <span><i class="r"></i>тишина больше 5 мин</span>
+        </div>
+
+        <ul class="convs" id="convList"></ul>
+      </aside>
+
+      <section class="pane thread">
+        <div class="thead">
+          <button class="iconbtn back" id="backBtn" aria-label="К списку">
+            <svg width="17" height="17" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3L5 8l5 5"/></svg>
+          </button>
+          <div class="who">
+            <div class="nm" id="tName">—</div>
+            <div class="sub" id="tSub"></div>
+          </div>
+          <button class="ibtn danger" id="deleteBtn" hidden title="Удалить обращение навсегда">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+              <path d="M2.8 4.2h10.4M6.4 4.2V2.8h3.2v1.4M4.2 4.2l.7 9a1 1 0 0 0 1 .9h4.2a1 1 0 0 0 1-.9l.7-9M6.6 6.8v4.6M9.4 6.8v4.6"/>
+            </svg>
+            <span>Удалить</span>
+          </button>
+          <button class="ibtn" id="archiveBtn">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linejoin="round">
+              <rect x="1.6" y="2.4" width="12.8" height="2.9" rx=".8"/>
+              <path d="M2.7 5.3h10.6v7.3a1 1 0 0 1-1 1H3.7a1 1 0 0 1-1-1V5.3zM6.4 8h3.2"/>
+            </svg>
+            <span>В архив</span>
+          </button>
+          <select class="status" id="statusSel" aria-label="Статус обращения">
+            <option value="new">Новый</option>
+            <option value="open">В работе</option>
+            <option value="waiting">Ждёт клиента</option>
+            <option value="closed">Закрыт</option>
+            <option value="archived">В архиве</option>
+          </select>
+          <button class="iconbtn" id="cardBtn" aria-label="Карточка клиента">
+            <svg width="17" height="17" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.45">
+              <circle cx="8" cy="5.6" r="2.6"/><path d="M2.8 13.6c0-2.6 2.3-4 5.2-4s5.2 1.4 5.2 4"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="msgs" id="msgs"></div>
+
+        <div class="composer">
+          <div class="ctools">
+            <button class="ibtn" id="tplBtn">Шаблоны</button>
+            <button class="ibtn" id="fileBtn" title="Прикрепить файл">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                <path d="M10.6 4.4L5.5 9.5a1.9 1.9 0 0 0 2.7 2.7l5.4-5.4a3.2 3.2 0 0 0-4.5-4.5L3.4 8a4.5 4.5 0 0 0 6.4 6.4l4.3-4.3"/>
+              </svg>
+              <span>Файл</span>
+            </button>
+            <input type="file" id="fileInput" hidden>
+            <button class="ibtn" id="simBtn" hidden>Входящее</button>
+            <span class="hintk">Enter — отправить</span>
+            <div class="tpl" id="tplMenu" hidden></div>
+          </div>
+          <div class="pending" id="pendingFile" hidden></div>
+          <div class="cbox">
+            <textarea id="input" rows="1" placeholder="Ответ уйдёт клиенту в его мессенджер"></textarea>
+            <button class="send" id="sendBtn" disabled>Ответить</button>
+          </div>
+        </div>
+      </section>
+
+      <aside class="pane card" id="cardPane">
+        <div class="phead"><div class="t"><h2>Карточка клиента</h2></div></div>
+        <div class="cbody" id="cbody"></div>
+      </aside>
+
+    </div>
+  </div>
+
+  <!-- ============ БАЗА КЛИЕНТОВ ============ -->
+  <div class="view" id="viewClients">
+    <div class="archive">
+      <div class="awrap">
+        <div class="ahead">
+          <div>
+            <h2 id="cliTitle">База клиентов</h2>
+            <p id="cliLead">Кто обращался, с чем и как с ними разговаривать</p>
+          </div>
+          <span class="acount" id="cliCount"></span>
+        </div>
+
+        <div class="asearch" id="cliSearchBox">
+          <svg class="mag" width="19" height="19" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="7" cy="7" r="4.4"/><path d="M10.4 10.4L14 14"/>
+          </svg>
+          <input id="cliQ" type="search" placeholder="Имя, организация, ключ или телефон" autocomplete="off">
+          <button class="iconbtn clr" id="cliClear" hidden aria-label="Очистить">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+          </button>
+        </div>
+        <p class="ahint" id="cliHint"></p>
+
+        <div id="cliBody"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ АРХИВ ============ -->
+  <div class="view" id="viewArchive">
+    <div class="archive">
+      <div class="alayout">
+        <div class="awrap">
+          <div class="ahead">
+            <div>
+              <h2>Архив обращений</h2>
+              <p>Решённые вопросы, разложенные по темам</p>
+            </div>
+            <span class="acount" id="aCount"></span>
+          </div>
+
+          <div class="asearch">
+            <div class="amodes" role="group" aria-label="Что делает строка">
+              <button type="button" id="modeFind" aria-pressed="true">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="7" cy="7" r="4.4"/><path d="M10.4 10.4L14 14"/></svg>
+                Найти обращение
+              </button>
+              <button type="button" id="modeAsk" aria-pressed="false">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M2.5 13.5h11M4.5 11V8M8 11V4.5M11.5 11V6.5"/></svg>
+                Спросить у базы
+              </button>
+            </div>
+            <div class="afield">
+              <svg class="mag" width="19" height="19" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+                <circle cx="7" cy="7" r="4.4"/><path d="M10.4 10.4L14 14"/>
+              </svg>
+              <input id="aq" type="search" placeholder="Например: не видит ключ" autocomplete="off">
+              <button class="iconbtn clr" id="aClear" hidden aria-label="Очистить">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+              </button>
+            </div>
+          </div>
+          <p class="ahint" id="aHint"></p>
+
+          <div id="askBox"></div>
+          <div id="aBody"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal" id="archiveModal" hidden>
+  <div class="mbox wide" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <header class="mhead">
+      <div class="mtitle">
+        <h3 id="mTitle">Куда отправить обращение?</h3>
+        <p id="mSub"></p>
+      </div>
+      <div class="msearch">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.4"/><path d="M10.4 10.4L14 14"/></svg>
+        <input id="mSearch" type="search" placeholder="Найти тему" autocomplete="off">
+      </div>
+      <button class="iconbtn" id="mClose" aria-label="Закрыть">
+        <svg width="17" height="17" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+      </button>
+    </header>
+    <div class="folders" id="folderList"></div>
+    <div class="moodwrap">
+      <h4 title="Пометка останется в базе и всплывёт при следующем обращении">Как прошёл разговор?</h4>
+      <div class="moods" id="moodList"></div>
+    </div>
+    <footer>
+      <span class="mpicked" id="mPicked"></span>
+      <button class="btn" id="mCancel">Отмена</button>
+      <button class="btn primary" id="mOk" disabled>Отправить в архив</button>
+    </footer>
+  </div>
+</div>
+
+<div class="modal" id="deleteModal" hidden>
+  <div class="mbox narrow" role="dialog" aria-modal="true" aria-labelledby="dTitle">
+    <header>
+      <h3 id="dTitle">Удалить обращение навсегда?</h3>
+      <button class="iconbtn" id="dClose" aria-label="Закрыть">
+        <svg width="17" height="17" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+      </button>
+    </header>
+    <div class="dbody" id="dBody"></div>
+    <p class="dwarn">Переписка и вложения будут стёрты с диска. Отменить это нельзя.
+       Карточка клиента и остальные его обращения останутся.</p>
+    <footer>
+      <button class="btn" id="dCancel">Отмена</button>
+      <button class="btn danger" id="dOk">Удалить навсегда</button>
+    </footer>
+  </div>
+</div>
+
+<div class="modal" id="intakeModal" hidden>
+  <div class="mbox" role="dialog" aria-modal="true" aria-labelledby="iTitle">
+    <header>
+      <h3 id="iTitle">Анкета перед вопросом</h3>
+      <button class="iconbtn" id="iClose" aria-label="Закрыть">
+        <svg width="17" height="17" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+      </button>
+    </header>
+    <p class="msub">Клиент сразу пишет вопрос — он тут же появляется в обращениях. Пока специалист читает, бот предлагает пару пунктов кнопками. Любой можно пропустить.</p>
+    <div class="script" id="scriptBox"></div>
+    <p class="snote">Вопрос никогда не ждёт анкету. Ответы ложатся в карточку клиента и строкой «Анкета · …» в переписку. Заполненную анкету второй раз не предлагают, а как только ответил специалист — бот больше не встревает.</p>
+    <footer><button class="btn primary" id="iOk">Понятно</button></footer>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ================= данные ================= */
+const NOW = Date.now();
+const m = n => n*60000, h = n => n*3600000, d = n => n*86400000;
+const FIVE = 5*60000;
+
+const TEMPLATES = [
+  {t:"Приветствие", v:"Здравствуйте! Техподдержка Турбосметчика. Вижу вашу анкету, сейчас разберёмся."},
+  {t:"Ключ не определяется", v:"Проверьте, пожалуйста, три вещи: горит ли светодиод на ключе, установлен ли драйвер Sentinel HASP и запущена ли служба «Sentinel LDK License Manager» в services.msc. Чаще всего после обновления Windows служба остаётся остановленной."},
+  {t:"Стоимость и счёт", v:"Турбосметчик СМР — от 30 000 ₽ за рабочее место, со второго места действует скидка 30%. Пришлите реквизиты и количество мест, счёт выставим в течение дня."},
+  {t:"Обновления базы", v:"Актуальная сборка и дополнения ФСНБ публикуются в личном кабинете, раздел «Обновления». Доступ входит в годовую подписку на сопровождение."},
+  {t:"Передал специалисту", v:"Спасибо за обращение! Передал вопрос профильному специалисту, вернусь с ответом в течение рабочего дня."}
+];
+
+/* Архив: разделы-родители и темы внутри. Тот же список, что в
+   backend/app/folders.py — обращение кладётся в тему, раздел нужен
+   для обзора. Цвет темы берётся от раздела: семья узнаётся глазом. */
+const GROUPS = [
+  {k:"g_setup", n:"Установка и подключение", hint:"Поставить, скачать, подключиться", c:"#2f7fc1", kids:[
+    ["install","Установка"], ["download","Скачать"], ["driver","Драйвер"], ["remote","Удалённое подключение"]]},
+  {k:"g_errors", n:"Ошибки и сбои", hint:"Программа падает или ведёт себя странно", c:"#d0524a", kids:[
+    ["err_turbo","Ошибка в Турбосметчике"], ["err_build","Ошибка в сборке"]]},
+  {k:"g_work", n:"Работа в программе", hint:"Функции, документы, печать", c:"#7b5cd6", kids:[
+    ["functions","Функции программы"], ["docprops","Свойства документа"],
+    ["formulas","Формулы и итоговые начисления"], ["correction","Поправка"],
+    ["print","Настройки печати"], ["objsmeta","Объектный сметчик"], ["explnote","Пояснительная записка"]]},
+  {k:"g_norms", n:"Нормативные базы", hint:"Базы, дополнения, индексы", c:"#c88a12", kids:[
+    ["base_q","Вопрос по базе"], ["addon","Выбрать дополнение"], ["snb","Преобразовать СНБ"],
+    ["indexes","Вопрос по индексам"], ["techpart","Тех часть"], ["pir","ПИР"], ["rzd","РЖД"]]},
+  {k:"g_exchange", n:"Обмен и форматы", hint:"GGE/MGE, АРПС, импорт", c:"#12907f", kids:[
+    ["gge","GGE/MGE импорт и экспорт"], ["gge_exp","Вопрос mge/gge от эксперта"], ["arps","АРПС"],
+    ["vor","ВОР"], ["pricelist","Импорт прайс-листа"]]},
+  {k:"g_method", n:"Методика и консультации", hint:"Как правильно посчитать", c:"#3f9a52", kids:[
+    ["method","Вопрос по методике"], ["consult","Консультация"], ["market","Конъюнктурный анализ"],
+    ["nmck","НМЦК, смета контракта"], ["finderr","Поиск ошибки в смете"]]}
+];
+const UNDEF = {k:"undef", n:"Не определённая тема", hint:"Разберём позже и разложим по папкам", c:"#78716c"};
+const FBY = {}, GBY = {};
+GROUPS.forEach(g => {
+  GBY[g.k] = g;
+  g.kids = g.kids.map(p => { const f = {k:p[0], n:p[1], c:g.c, g:g}; FBY[f.k] = f; return f; });
+});
+FBY.undef = UNDEF;
+
+/* Пометки о манере клиента. Ставятся человеку, а не обращению, поэтому
+   живут в базе клиентов и всплывают при каждом следующем разговоре.
+   Порядок — от самого лёгкого собеседника к самому тяжёлому. */
+const MOODS = [
+  {k:"calm",     g:"✓", c:"#1fb37a", n:"Спокойный",
+   hint:"Обычный разговор, особой подготовки не нужно"},
+  {k:"talker",   g:"»", c:"#2ba3e3", n:"Разговорчивый",
+   hint:"Любит поболтать — закладывайте время с запасом"},
+  {k:"slow",     g:"?", c:"#7a63e8", n:"Долгое объяснение",
+   hint:"Схватывает тяжело: разбирайте по шагам, не торопите"},
+  {k:"arguer",   g:"!", c:"#e3a41c", n:"Спорщик",
+   hint:"Слушает, но возражает почти на каждый пункт — держитесь фактов"},
+  {k:"touchy",   g:"~", c:"#f2703a", n:"Исполнительный, но резкий",
+   hint:"Делает как сказали, но может вспылить на мелочи"},
+  {k:"negative", g:"×", c:"#e23b2d", n:"Негативный",
+   hint:"Настроен недоброжелательно — только факты, без обещаний"}
+];
+const MBY = {}; MOODS.forEach(x => { MBY[x.k] = x; });
+
+/* Сценарий анкеты — тот же порядок, что в боте на бэкенде.
+   Вопрос клиента уходит специалисту сразу, анкета идёт параллельно. */
+const INTAKE_SCRIPT = [
+  {who:"client", q:"Не могу выгрузить смету в АРПС, пишет «неверная структура раздела»"},
+  {q:"Вопрос получили — специалист уже видит его и скоро ответит.\n\nПока ждёте: 4 коротких вопроса, чтобы специалист сразу поднял вашу лицензию и не переспрашивал. Любой можно пропустить.\n\nНомер ключа или лицензии?",
+   b:["Нет ключа","Пропустить","Не сейчас"], a:"14782"},
+  {q:"Название организации? Для ИП — фамилия.", b:["Частное лицо","Пропустить","Не сейчас"], a:"ООО «ПроектСтрой»"},
+  {q:"Телефон — на случай, если в мессенджере не достучимся.", b:["📱 Поделиться номером","Пропустить"], a:"📱 номер из Telegram"},
+  {q:"Как к вам обращаться? Имя и фамилия.", b:["Да, Ирина Кузнецова","Пропустить"], a:"Да, Ирина Кузнецова"},
+  {q:"Спасибо! Всё передал специалисту — он уже в курсе."}
+];
+
+const AVA = ["#1a5fa8","#3d5a80","#2f6f76","#4a4e7c","#0090c6","#3e5d73","#5a4a76","#26607a","#8a5a3c","#5c6b3f","#7a4a5e"];
+
+const SEED = [
+  {id:"c1", provider:"max", ext:"98314022", name:"Ирина Кузнецова", un:"@ikuznetsova",
+   intake:{key:"ТС-14782", org:"ООО «ПроектСтрой»", fio:"Ирина Кузнецова", phone:"+7 916 204-77-10", at:NOW-m(44)},
+   product:"Турбосметчик СМР", ver:"11.4.2", support:"до 12.03.2027",
+   topic:"Не видит ключ", status:"new", assignee:"—", folder:"",
+   tags:["лицензия","HASP"], note:"", unread:2, since:d(420),
+   pres:{state:"in", since:NOW-m(1), typing:false},
+   msgs:[
+     {dir:"in", t:"Здравствуйте! Переустановили Windows, теперь Турбосметчик пишет «Ключ защиты не найден». Ключ в USB, всё как было.", ts:NOW-m(41)},
+     {dir:"in", t:"Вот скриншот ошибки", ts:NOW-m(39), att:{n:"ошибка_ключа.png", s:"318 КБ", k:"PNG"}},
+     {dir:"in", t:"Работа стоит, сдаём смету заказчику в четверг. Поможете сегодня?", ts:NOW-m(12)}
+   ]},
+
+  {id:"c2", provider:"tg", ext:"449102873", name:"Сергей Плотников", un:"@s_plotnikov",
+   intake:{key:"ТС-09341", org:"ИП Плотников С. В.", fio:"Сергей Плотников", phone:"+7 903 771-05-62", at:NOW-d(2)-h(3)-m(4)},
+   product:"Турбосметчик СМР", ver:"11.3.8", support:"до 01.11.2026",
+   topic:"Обновление ФСНБ", status:"open", assignee:"Кирилл", folder:"",
+   tags:["обновления","ФСНБ"], note:"Работает по госконтрактам, обновления нужны день в день.", unread:0, since:d(700),
+   pres:{state:"in", since:NOW-m(13), typing:true},
+   msgs:[
+     {dir:"in", t:"Добрый день. Когда будет дополнение 15 к ФСНБ-2022? Заказчик уже требует считать по нему.", ts:NOW-d(2)-h(3)},
+     {dir:"out", t:"Здравствуйте, Сергей! Дополнение 15 вышло в Минстрое 8 сентября, мы выложили его в личный кабинет вчера вечером — раздел «Обновления», файл датирован 20.09.", ts:NOW-d(2)-h(2)-m(41), st:"read"},
+     {dir:"in", t:"Вижу файл, но при установке пишет «несовместимая версия программы»", ts:NOW-d(2)-h(2)-m(12)},
+     {dir:"out", t:"Так и есть: дополнение 15 требует сборку 11.4 и выше, у вас 11.3.8. Сначала поставьте обновление программы из того же раздела, потом базу — порядок важен, иначе индексы не подтянутся.", ts:NOW-d(2)-h(1)-m(50), st:"read"},
+     {dir:"sys", t:"Обращение передано специалисту: Кирилл", ts:NOW-d(2)-h(1)-m(45)},
+     {dir:"in", t:"Обновил программу, база встала. А старые сметы по дополнению 13 не поедут?", ts:NOW-h(4)-m(20)},
+     {dir:"out", t:"Нет, ранее составленные сметы хранят свою редакцию базы и пересчитываются только по вашей команде. Проверить можно в свойствах сметы — там указана редакция ФСНБ, по которой она собрана.", ts:NOW-h(3)-m(55), st:"delivered"},
+     {dir:"in", t:"Всё, разобрался. Спасибо!", ts:NOW-h(1)-m(8)}
+   ]},
+
+  {id:"c3", provider:"tg", ext:"518830224", name:"Анна Мельник", un:"@anna_melnik",
+   intake:{key:"нет ключа", org:"АО «Мытищинский ДСК»", fio:"Анна Мельник", phone:"+7 926 118-43-90", at:NOW-d(1)-h(6)-m(3)},
+   product:"—", ver:"—", support:"нет договора",
+   topic:"Второе рабочее место", status:"waiting", assignee:"Кирилл", folder:"",
+   tags:["оплата","юрлицо"], note:"Нужен счёт на 3 места. Тендерный отдел просит КП с печатью.", unread:0, since:d(9),
+   pres:{state:"left", since:NOW-h(3)-m(20), typing:false},
+   msgs:[
+     {dir:"in", t:"Здравствуйте! Сколько стоит Турбосметчик на три рабочих места и делаете ли сетевую версию?", ts:NOW-d(1)-h(6)},
+     {dir:"out", t:"Здравствуйте, Анна! Первое место — 30 000 ₽, второе и третье со скидкой 30%, итого 72 000 ₽. Сетевой ключ на 3 места — 78 000 ₽, зато лицензии не привязаны к конкретным компьютерам и выдаются по очереди.", ts:NOW-d(1)-h(5)-m(40), st:"read"},
+     {dir:"in", t:"А чем сетевая удобнее, если люди сидят в одном офисе?", ts:NOW-d(1)-h(5)-m(10)},
+     {dir:"out", t:"Если состав сметчиков не меняется — выгоднее обычные ключи. Сетевая окупается, когда людей больше, чем лицензий, или кто-то работает удалённо: ключ стоит на сервере, а подключаются по мере надобности.", ts:NOW-d(1)-h(4)-m(55), st:"read"},
+     {dir:"out", t:"Коммерческое предложение с печатью — во вложении, действует 30 дней.", ts:NOW-d(1)-h(4)-m(50), st:"read", att:{n:"КП_Мытищинский_ДСК.pdf", s:"412 КБ", k:"PDF"}},
+     {dir:"in", t:"Спасибо, передам в тендерный отдел и вернусь", ts:NOW-d(1)-h(4)-m(2)}
+   ]},
+
+  {id:"c4", provider:"max", ext:"77410265", name:"Дмитрий Рогов", un:"@d_rogov",
+   intake:{key:"ТС-11205", org:"ООО «СтройИнвест»", fio:"Дмитрий Рогов", phone:"+7 495 640-12-08", at:NOW-d(1)-h(2)-m(6)},
+   product:"Строительный эксперт", ver:"11.4.2", support:"до 30.09.2026",
+   topic:"Выгрузка в АРПС", status:"open", assignee:"Кирилл", folder:"",
+   tags:["АРПС","обмен"], note:"Сопровождение заканчивается через неделю — предложить продление.", unread:1, since:d(310),
+   pres:{state:"in", since:NOW-m(9), typing:false},
+   msgs:[
+     {dir:"in", t:"Добрый день. Заказчик принимает сметы только в АРПС 1.10, а его экспертиза ругается на наш файл: «неверная структура раздела».", ts:NOW-d(1)-h(2)},
+     {dir:"out", t:"Здравствуйте, Дмитрий! Такое обычно бывает, когда в смете есть пользовательские расценки без кода. При выгрузке в АРПС им нужно присвоить код вида «ПР-1», иначе раздел уходит пустым. Пришлите файл сметы, посмотрю точное место.", ts:NOW-d(1)-h(1)-m(30), st:"read"},
+     {dir:"in", t:"Отправляю. Там три авторские расценки по демонтажу.", ts:NOW-m(34), att:{n:"смета_корпус_2.xml", s:"1,1 МБ", k:"XML"}}
+   ]},
+
+  {id:"c5", provider:"tg", ext:"330157744", name:"Марина Белова", un:"@mbelova",
+   intake:{key:"ТС-15980", org:"ООО «Ремстройсервис»", fio:"Марина Белова", phone:"+7 915 883-21-44", at:NOW-h(2)-m(41)},
+   product:"Турбосметчик СМР", ver:"11.4.2", support:"до 18.06.2027",
+   topic:"Обучение сметчика", status:"new", assignee:"—", folder:"",
+   tags:["обучение"], note:"", unread:1, since:d(64),
+   pres:{state:"in", since:NOW-m(3), typing:false},
+   msgs:[
+     {dir:"in", t:"Здравствуйте, взяли нового сметчика, раньше работал в другой программе. Есть у вас обучение или хотя бы вебинары по вашей?", ts:NOW-h(2)-m(38)}
+   ]},
+
+  {id:"c6", provider:"tg", ext:"260044918", name:"Оксана Данилова", un:"@oks_danilova",
+   intake:{key:"ТС-13044", org:"ИП Данилова О. А.", fio:"Оксана Данилова", phone:"+7 977 302-66-19", at:NOW-d(3)-h(5)-m(2)},
+   product:"Турбосметчик ПИР", ver:"11.4.0", support:"до 05.02.2027",
+   topic:"Перенос лицензии", status:"waiting", assignee:"Кирилл", folder:"",
+   tags:["лицензия"], note:"Старый ноутбук сгорел, ключ уцелел.", unread:0, since:d(190),
+   pres:{state:"left", since:NOW-d(1), typing:false},
+   msgs:[
+     {dir:"in", t:"Сгорел ноутбук, купила новый. Как перенести программу, чтобы не слетела лицензия?", ts:NOW-d(3)-h(5)},
+     {dir:"out", t:"Лицензия живёт в ключе, а не в компьютере, так что переносить её не нужно. На новом ноутбуке: установить программу с сайта, поставить драйвер ключа, вставить ключ — и всё заработает.", ts:NOW-d(3)-h(4)-m(20), st:"read"},
+     {dir:"in", t:"А сметы? Они на старом диске остались, диск живой.", ts:NOW-d(3)-h(3)-m(50)},
+     {dir:"out", t:"Скопируйте папку базы данных целиком — по умолчанию это C:\\TurboSmeta\\Base. После установки укажите путь к ней в настройках, и все ваши объекты откроются вместе с историей расчётов.", ts:NOW-d(3)-h(3)-m(30), st:"read"},
+     {dir:"sys", t:"Установлено напоминание: 25 сентября, «Проверить, перенесла ли базу»", ts:NOW-d(3)-h(3)-m(28)}
+   ]},
+
+  {id:"c7", provider:"max", ext:"81200537", name:"Артём Воронцов", un:"@a_vorontsov",
+   intake:{key:"нет ключа", org:"частное лицо", fio:"Артём Воронцов", phone:"+7 999 145-70-33", at:NOW-m(56)},
+   product:"—", ver:"—", support:"нет договора",
+   topic:"Первичный вопрос о цене", status:"new", assignee:"—", folder:"",
+   tags:[], note:"", unread:1, since:m(56),
+   pres:{state:"in", since:NOW-m(22), typing:true},
+   msgs:[
+     {dir:"in", t:"Сколько стоит ваша программа для смет? И есть ли демоверсия посмотреть?", ts:NOW-m(52)}
+   ]},
+
+  /* ---------- архив ---------- */
+  {id:"c8", provider:"max", ext:"64039871", name:"Павел Исаев", un:"@pisaev",
+   intake:{key:"ТС-10662", org:"ООО «Люберецкий ремонт»", fio:"Павел Исаев", phone:"+7 926 771-09-25", at:NOW-d(6)-h(7)-m(3)},
+   product:"Турбосметчик СМР", ver:"11.4.2", support:"до 22.08.2027",
+   topic:"Накопительная ведомость из КС-2", status:"archived", assignee:"Кирилл", folder:"functions",
+   tags:["акты"], note:"", unread:0, since:d(540),
+   pres:{state:"left", since:NOW-d(5), typing:false},
+   msgs:[
+     {dir:"in", t:"Подскажите, как из акта КС-2 получить накопительную ведомость, чтобы не считать вручную остатки по месяцам?", ts:NOW-d(6)-h(7)},
+     {dir:"out", t:"В журнале актов выделите нужные КС-2 за период и нажмите «Накопительная ведомость» на панели документов. Программа сама подтянет объёмы с начала строительства и выведет остаток по каждой позиции.", ts:NOW-d(6)-h(6)-m(40), st:"read"},
+     {dir:"in", t:"Нашёл, работает. А в Excel её можно?", ts:NOW-d(5)-h(2)},
+     {dir:"out", t:"Да, кнопка «Экспорт → XLS» в окне ведомости. Формат сохраняет формулы, так что заказчик сможет проверить расчёт у себя.", ts:NOW-d(5)-h(1)-m(50), st:"read"},
+     {dir:"sys", t:"Обращение отправлено в архив → папка «Функции программы»", ts:NOW-d(5)-h(1)-m(45)}
+   ]},
+
+  {id:"c9", provider:"tg", ext:"771044920", name:"Галина Ершова", un:"@g_ershova",
+   intake:{key:"ТС-12890", org:"МКУ «Управление ЖКХ»", fio:"Галина Ершова", phone:"+7 905 660-18-02", at:NOW-d(9)-h(4)-m(5)},
+   product:"Турбосметчик СМР", ver:"11.4.2", support:"до 14.12.2026",
+   topic:"ТСН Московской области не видны в списке баз", status:"archived", assignee:"Кирилл", folder:"base_q",
+   tags:["ТСН"], note:"", unread:0, since:d(260),
+   pres:{state:"left", since:NOW-d(8), typing:false},
+   msgs:[
+     {dir:"in", t:"Нам нужно считать по ТСН Московской области, а в списке баз их не вижу. Они у вас есть?", ts:NOW-d(9)-h(4)},
+     {dir:"out", t:"Есть, но территориальные нормативы подключаются отдельным модулем к основной поставке. В личном кабинете он появится в списке доступных баз после активации — отправил заявку, к утру будет.", ts:NOW-d(9)-h(3)-m(30), st:"read"},
+     {dir:"in", t:"Появились, спасибо большое!", ts:NOW-d(8)-h(6)},
+     {dir:"sys", t:"Обращение отправлено в архив → папка «Вопрос по базе»", ts:NOW-d(8)-h(5)}
+   ]},
+
+  {id:"c10", provider:"tg", ext:"640028811", name:"Виктор Саблин", un:"@v_sablin",
+   intake:{key:"ТС-08117", org:"ООО «Дорстрой-9»", fio:"Виктор Саблин", phone:"+7 926 044-77-51", at:NOW-d(14)-h(3)},
+   product:"Турбосметчик СМР", ver:"11.4.1", support:"до 09.04.2027",
+   topic:"Ключ перестал определяться после обновления Windows", status:"archived", assignee:"Кирилл", folder:"driver",
+   tags:["HASP"], note:"", unread:0, since:d(880),
+   pres:{state:"left", since:NOW-d(13), typing:false},
+   msgs:[
+     {dir:"in", t:"После обновления Windows программа перестала видеть ключ защиты. Светодиод на ключе горит, но в программе ошибка.", ts:NOW-d(14)-h(3)},
+     {dir:"out", t:"Скорее всего, обновление остановило службу Sentinel LDK License Manager. Откройте services.msc, найдите её, запустите и поставьте тип «Автоматически», затем перезапустите Турбосметчик.", ts:NOW-d(14)-h(2)-m(30), st:"read"},
+     {dir:"in", t:"Точно, служба стояла. Запустил — ключ определился. Спасибо!", ts:NOW-d(13)-h(7)},
+     {dir:"sys", t:"Обращение отправлено в архив → папка «Драйвер»", ts:NOW-d(13)-h(6)}
+   ]},
+
+  {id:"c11", provider:"max", ext:"55201394", name:"Елена Тарасова", un:"@e_tarasova",
+   intake:{key:"ТС-14003", org:"ГБУ «Автодор МО»", fio:"Елена Тарасова", phone:"+7 916 712-30-44", at:NOW-d(21)-h(5)},
+   product:"Турбосметчик СМР", ver:"11.4.2", support:"до 28.01.2027",
+   topic:"Пересчёт сметы по ТСН после смены индексов", status:"archived", assignee:"Кирилл", folder:"indexes",
+   tags:["ТСН","индексы"], note:"", unread:0, since:d(430),
+   pres:{state:"left", since:NOW-d(20), typing:false},
+   msgs:[
+     {dir:"in", t:"Вышли новые индексы к ТСН, а смета считает по старым. Как пересчитать, не пересобирая заново?", ts:NOW-d(21)-h(5)},
+     {dir:"out", t:"В свойствах сметы смените редакцию индексов и нажмите «Пересчитать». Программа сохранит объёмы и расценки, поменяются только индексы — старую версию можно оставить копией через «Сохранить как».", ts:NOW-d(21)-h(4)-m(20), st:"read"},
+     {dir:"in", t:"Пересчиталось, суммы сошлись с проверкой заказчика. Спасибо!", ts:NOW-d(20)-h(6)},
+     {dir:"sys", t:"Обращение отправлено в архив → папка «Вопрос по индексам»", ts:NOW-d(20)-h(5)}
+   ]},
+
+  {id:"c12", provider:"tg", ext:"310772045", name:"Роман Гусев", un:"@r_gusev",
+   intake:{key:"ТС-11840", org:"ООО «СМУ-15»", fio:"Роман Гусев", phone:"+7 903 218-66-04", at:NOW-d(30)-h(2)},
+   product:"Турбосметчик СМР", ver:"11.4.0", support:"до 17.07.2027",
+   topic:"Заказчик не принимает выгрузку XML", status:"archived", assignee:"Кирилл", folder:"arps",
+   tags:["АРПС","XML"], note:"", unread:0, since:d(610),
+   pres:{state:"left", since:NOW-d(29), typing:false},
+   msgs:[
+     {dir:"in", t:"Выгрузили смету в XML, заказчик говорит, что его программа файл не открывает. В чём может быть дело?", ts:NOW-d(30)-h(2)},
+     {dir:"out", t:"Уточните у заказчика версию формата: АРПС 1.10 и формат Гранд-сметы — разные вещи. В окне выгрузки выберите нужный и поставьте кодировку Windows-1251, её ждёт большинство проверяющих программ.", ts:NOW-d(30)-h(1)-m(25), st:"read"},
+     {dir:"in", t:"Была кодировка UTF-8. Поменяли, файл открылся.", ts:NOW-d(29)-h(4)},
+     {dir:"sys", t:"Обращение отправлено в архив → папка «АРПС»", ts:NOW-d(29)-h(3)}
+   ]},
+
+  {id:"c13", provider:"max", ext:"98110277", name:"Надежда Кротова", un:"@n_krotova",
+   intake:{key:"нет ключа", org:"частное лицо", fio:"Надежда Кротова", phone:"+7 999 801-22-16", at:NOW-d(40)-h(6)},
+   product:"—", ver:"—", support:"нет договора",
+   topic:"Вопрос не по программе", status:"archived", assignee:"Кирилл", folder:"undef",
+   tags:[], note:"Спрашивала про нормативы, к программе отношения не имеет.", unread:0, since:d(40),
+   pres:{state:"left", since:NOW-d(39), typing:false},
+   msgs:[
+     {dir:"in", t:"Подскажите, а где вообще почитать про изменения в ценообразовании с нового года? Не по программе вопрос, просто вы в теме.", ts:NOW-d(40)-h(6)},
+     {dir:"out", t:"Смотрите письма Минстроя на официальном сайте и раздел новостей у нас — мы кратко пересказываем изменения. Отдельной методички, к сожалению, не ведём.", ts:NOW-d(40)-h(5)-m(10), st:"read"},
+     {dir:"sys", t:"Обращение отправлено в архив → папка «Не определённая тема»", ts:NOW-d(39)-h(2)}
+   ]}
+];
+
+const FILTERS = [
+  {k:"all",     l:"Все"},
+  {k:"new",     l:"Новые"},
+  {k:"open",    l:"В работе"},
+  {k:"waiting", l:"Ждут клиента"},
+  {k:"closed",  l:"Закрытые"}
+];
+const STATUS_L = {new:"Новый", open:"В работе", waiting:"Ждёт клиента", closed:"Закрыт", archived:"В архиве"};
+const PROVIDER_L = {tg:"Telegram", max:"MAX"};
+
+/* ================= состояние ================= */
+let convs = SEED.map((c,i) => {
+  let n = 0;
+  c.msgs = c.msgs.map(x => Object.assign({id:c.id+"-"+(++n)}, x));
+  return Object.assign({color:AVA[i%AVA.length], seq:n, folders:c.folder ? [c.folder] : []}, c);
+});
+let activeId = "c1";
+let filter = "all";
+let query = "";
+let typingIn = null;
+let pendingFolders = [];    // обращение можно положить сразу в несколько папок
+let section = "inbox";
+let openFolder = null;
+let aQuery = "";
+let openClient = null;
+let cQuery = "";
+let pendingMood = null;
+let chatClosed = false;      // оператор сам свернул чат — не открывать первый заново
+let booting = window.TP_SERVER ? "Загружаю обращения…" : "";
+
+const $ = s => document.querySelector(s);
+const el = (tag, cls, txt) => { const e = document.createElement(tag); if(cls) e.className = cls; if(txt!=null) e.textContent = txt; return e; };
+const byId = id => convs.find(c => c.id === id);
+const store = {
+  get(k,dflt){ try{ const v = localStorage.getItem("tp:"+k); return v==null?dflt:JSON.parse(v); }catch(e){ return dflt; } },
+  set(k,v){ try{ localStorage.setItem("tp:"+k, JSON.stringify(v)); }catch(e){} }
+};
+
+/* ================= база клиентов =================
+   Клиент — это человек, а не обращение: у одного за годы накапливается
+   несколько вопросов. Склеиваем по мессенджеру и id внутри него —
+   ровно то, что приходит в каждом апдейте. */
+const clients = [];
+const CBY = {};
+convs.forEach(c => {
+  const key = c.provider + ":" + c.ext;
+  let cl = CBY[key];
+  if(!cl){
+    const ik = c.intake || {};
+    cl = {
+      id:key, name:c.name, un:c.un, provider:c.provider, ext:c.ext, color:c.color,
+      org:ik.org || "—", lic:ik.key || "—", phone:ik.phone || "—",
+      product:c.product, ver:c.ver, support:c.support, since:c.since,
+      mood:"", moodAt:0, moodBy:"", convs:[]
+    };
+    CBY[key] = cl;
+    clients.push(cl);
+  }
+  cl.convs.push(c.id);
+  c.client = key;
+});
+const clientOf = c => CBY[c.client];
+
+/* Часть базы уже размечена — иначе не видно, ради чего это затевалось */
+[["tg:449102873","talker"], ["tg:518830224","slow"], ["max:77410265","arguer"],
+ ["tg:260044918","touchy"], ["max:81200537","negative"], ["max:64039871","calm"],
+ ["tg:640028811","calm"],   ["tg:310772045","arguer"]].forEach(pair => {
+  const cl = CBY[pair[0]];
+  if(cl){ cl.mood = pair[1]; cl.moodAt = NOW - d(3); cl.moodBy = "Кирилл"; }
+});
+
+/* Выбор оператора переживает перезагрузку страницы */
+const savedMoods = store.get("moods", {});
+Object.keys(savedMoods).forEach(id => { if(CBY[id]) Object.assign(CBY[id], savedMoods[id]); });
+function saveMoods(){
+  const out = {};
+  clients.forEach(cl => {
+    if(cl.mood) out[cl.id] = {mood:cl.mood, moodAt:cl.moodAt, moodBy:cl.moodBy};
+  });
+  store.set("moods", out);
+}
+
+function moodChip(mood){
+  const mo = MBY[mood];
+  if(!mo) return null;
+  const s = el("span","moodchip");
+  s.style.setProperty("--mc", mo.c);
+  s.dataset.mood = mo.k;
+  s.append(el("i","mo"), document.createTextNode(mo.n));
+  s.title = mo.hint;
+  return s;
+}
+function moodBar(cl){
+  const mo = MBY[cl.mood];
+  if(!mo) return null;
+  const box = el("div","moodbar");
+  box.style.setProperty("--mc", mo.c);
+  box.dataset.mood = mo.k;
+  box.append(el("span","mi mo", mo.g));
+  const t = el("div","mt");
+  t.append(el("b",null,"Клиент: " + mo.n.toLowerCase()), el("span",null,mo.hint));
+  if(cl.moodAt) t.append(el("div","mw","пометил " + cl.moodBy + " · " + dateShort(cl.moodAt)));
+  box.append(t);
+  return box;
+}
+
+/* ================= формат ================= */
+const MONTHS = ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
+const pad = n => String(n).padStart(2,"0");
+const clock = ts => { const t = new Date(ts); return pad(t.getHours())+":"+pad(t.getMinutes()); };
+function relTime(ts){
+  const diff = Date.now()-ts;
+  if(diff < m(1)) return "только что";
+  if(diff < h(1)) return Math.floor(diff/60000)+" мин";
+  const t = new Date(ts), today = new Date();
+  if(t.toDateString() === today.toDateString()) return clock(ts);
+  if(t.toDateString() === new Date(Date.now()-d(1)).toDateString()) return "вчера";
+  return t.getDate()+" "+MONTHS[t.getMonth()].slice(0,3);
+}
+function dateShort(ts){ const t = new Date(ts); return t.getDate()+" "+MONTHS[t.getMonth()].slice(0,3)+" "+String(t.getFullYear()).slice(2); }
+function dayLabel(ts){
+  const t = new Date(ts);
+  if(t.toDateString() === new Date().toDateString()) return "Сегодня";
+  if(t.toDateString() === new Date(Date.now()-d(1)).toDateString()) return "Вчера";
+  return t.getDate()+" "+MONTHS[t.getMonth()];
+}
+function initials(name){
+  const p = name.replace(/[«»"]/g,"").trim().split(/\s+/);
+  return ((p[0]||"")[0] + ((p[1]||"")[0]||"") || "?").toUpperCase();
+}
+function plural(n,one,few,many){
+  const a = Math.abs(n)%100, b = a%10;
+  if(a>10 && a<20) return many;
+  if(b>1 && b<5) return few;
+  if(b===1) return one;
+  return many;
+}
+const mins = ms => Math.max(0, Math.floor(ms/60000));
+const lastMsg = c =>
+  c.msgs.filter(x => x.dir !== "sys").slice(-1)[0] ||
+  c.msgs.slice(-1)[0] ||
+  {dir:"in", t:"", ts:c.lastTs || 0};   /* клиент ещё заполняет анкету */
+
+/* ================= присутствие =================
+   Мессенджеры не сообщают, открыт ли у клиента чат, — только что он
+   написал. Поэтому считаем честно: писал меньше 5 минут назад — в чате;
+   пишет прямо сейчас — оранжевый; дольше 5 минут тишины — уже не в чате,
+   и показываем, когда был последний раз, а не растущее «в чате N мин». */
+function presence(c){
+  const p = c.pres || {state:"left", since:0, typing:false};
+  const e = Date.now() - p.since;
+  if(!p.since) return {k:"red", label:"не в чате"};
+  if(p.state === "left") return {k:"red", label:"вышел " + (e < m(1) ? "только что" : relAgo(e))};
+  if(p.typing)  return {k:"orange", label:"печатает…"};
+  if(e < FIVE)  return {k:"green",  label:"в чате · " + (e < m(1) ? "только что писал" : "писал " + relAgo(e))};
+  return {k:"red", label:"не в чате · был " + relAgo(e)};
+}
+function relAgo(ms){
+  if(ms < h(1)) return mins(ms)+" мин назад";
+  if(ms < d(1)){ const n = Math.floor(ms/3600000); return n+" "+plural(n,"час","часа","часов")+" назад"; }
+  const n = Math.floor(ms/86400000);
+  return n+" "+plural(n,"день","дня","дней")+" назад";
+}
+
+/* ================= умный поиск по архиву =================
+   Русский язык склоняет всё подряд, поэтому сравниваем не слова целиком,
+   а основы: «ключа», «ключом», «ключи» дают одну основу «ключ».
+   Плюс словарь синонимов — «hasp» и «лицензия» ищутся вместе с «ключом». */
+const SYNONYMS = {
+  "ключ":["hasp","лицензи","активац","sentinel","защит"],
+  "лицензи":["ключ","hasp","активац"],
+  "арпс":["xml","выгруз","обмен","формат"],
+  "выгруз":["арпс","xml","экспорт","обмен"],
+  "кс":["акт","ведомост","накопительн"],
+  "акт":["кс","ведомост"],
+  "тсн":["территориальн","норматив","индекс"],
+  "фснб":["фер","гэсн","база","дополнен","норматив"],
+  "обновлен":["дополнен","сборк","версия"],
+  "счет":["оплат","реквизит","кп","предложен"],
+  "обучен":["вебинар","курс","методичк"],
+  "устан":["настройк","развертыван","служб"]
+};
+const STOP = new Set(["и","в","на","не","с","по","а","что","как","для","от","до","за","у","о","об","к","из","же","ли","бы","или","это","при","мне","мы","вы","он","она","они","есть","был","было","быть","мой","наш","ваш"]);
+
+function stem(w){
+  w = w.toLowerCase().replace(/ё/g,"е").replace(/[^a-zа-я0-9-]/g,"");
+  if(w.length <= 4) return w;
+  return w.replace(/(ами|ями|ость|ений|ения|ение|ыми|ими|ого|его|ому|ему|ая|ое|ые|ый|ой|ий|ем|ом|ах|ях|ам|ям|ов|ев|ью|ия|ие|у|ю|а|я|ы|и|е|ь)$/,"").slice(0,9);
+}
+function tokenize(s){
+  return String(s||"").split(/[^a-zA-Zа-яА-ЯёЁ0-9-]+/)
+    .map(w => w.toLowerCase())
+    .filter(w => w.length > 1 && !STOP.has(w))
+    .map(stem)
+    .filter(Boolean);
+}
+/* Короткое слово не должно совпадать с длинным термином только по первой
+   букве: иначе предлог «в» считается совпадением с «видит», подсвечивается
+   и раздувает оценку. Префикс засчитываем от четырёх символов. */
+function hits(word, term){
+  if(word === term) return true;
+  if(word.length < 4 || term.length < 4) return false;
+  return word.startsWith(term) || term.startsWith(word);
+}
+function expand(tokens){
+  const out = new Map();
+  tokens.forEach(t => {
+    out.set(t, 1);
+    Object.keys(SYNONYMS).forEach(key => {
+      if(t.startsWith(key) || key.startsWith(t)){
+        SYNONYMS[key].forEach(s => { if(!out.has(s)) out.set(s, 0.55); });
+      }
+    });
+  });
+  return out;
+}
+
+function searchArchive(raw){
+  const base = tokenize(raw);
+  if(!base.length) return [];
+  const terms = expand(base);
+  const results = [];
+
+  convs.filter(c => c.status === "archived").forEach(c => {
+    const fields = [
+      {text:c.topic, w:3},
+      {text:c.intake ? c.intake.org : "", w:1.5},
+      {text:c.name, w:1.5},
+      {text:c.tags.join(" "), w:2.5},
+      {text:foldersOf(c).map(k => FBY[k] ? FBY[k].n : "").join(" "), w:2},
+      {text:c.msgs.map(x => x.t).join(" "), w:1}
+    ];
+
+    let score = 0;
+    const hit = new Set();
+    terms.forEach((weight, term) => {
+      let found = false;
+      fields.forEach(f => {
+        const words = tokenize(f.text);
+        const n = words.filter(w => hits(w, term)).length;
+        if(n){ score += n * f.w * weight; found = true; }
+      });
+      if(found && weight === 1) hit.add(term);
+    });
+
+    if(!score) return;
+    // все слова запроса нашлись — такой ответ почти наверняка тот самый
+    if(hit.size === base.length && base.length > 1) score *= 2.2;
+    results.push({conv:c, score, terms:[...terms.keys()], hit:[...hit]});
+  });
+
+  return results.sort((a,b) => b.score - a.score).slice(0, 40);
+}
+
+function bestSnippet(c, terms){
+  let best = null, bestN = -1;
+  c.msgs.filter(x => x.dir !== "sys" && x.t).forEach(msg => {
+    const words = tokenize(msg.t);
+    const n = terms.filter(t => words.some(w => hits(w, t))).length;
+    if(n > bestN){ bestN = n; best = msg; }
+  });
+  return best ? best.t : c.topic;
+}
+
+function highlight(text, terms){
+  const frag = document.createDocumentFragment();
+  const parts = String(text).split(/([a-zA-Zа-яА-ЯёЁ0-9-]+)/);
+  parts.forEach(p => {
+    const s = stem(p);
+    const isHit = s && terms.some(t => hits(s, t));
+    if(isHit && /[a-zA-Zа-яА-ЯёЁ0-9]/.test(p)) frag.append(el("mark", null, p));
+    else frag.append(document.createTextNode(p));
+  });
+  return frag;
+}
+
+/* ================= общие кусочки ================= */
+function avatarBlock(c, size){
+  const wrap = el("div","avawrap");
+  const ava = el("div","ava", initials(c.name));
+  ava.style.backgroundImage = "linear-gradient(145deg, color-mix(in srgb, "+c.color+" 64%, #ffffff), "+c.color+")";
+  const ch = el("span","ch "+c.provider, c.provider === "tg" ? "T" : "M");
+  ch.title = PROVIDER_L[c.provider];
+  const pr = presence(c);
+  const live = el("span","live "+pr.k);
+  live.dataset.conv = c.id;
+  live.title = pr.label;
+  wrap.append(ava, ch, live);
+  if(size){ wrap.style.width = wrap.style.height = size+"px"; ava.style.width = ava.style.height = size+"px"; }
+  return wrap;
+}
+function folderIcon(f, size){
+  const ic = el("span","fi");
+  ic.style.backgroundImage = "linear-gradient(145deg, color-mix(in srgb, "+f.c+" 66%, #ffffff), "+f.c+")";
+  if(size){ ic.style.width = ic.style.height = size+"px"; ic.style.borderRadius = Math.round(size/3)+"px"; }
+  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("width", size ? size*0.42 : 17);
+  svg.setAttribute("height", size ? size*0.42 : 17);
+  svg.setAttribute("viewBox","0 0 16 16"); svg.setAttribute("fill","none");
+  svg.setAttribute("stroke","currentColor"); svg.setAttribute("stroke-width","1.5");
+  svg.setAttribute("stroke-linejoin","round");
+  const p = document.createElementNS("http://www.w3.org/2000/svg","path");
+  p.setAttribute("d","M1.8 4.2a1 1 0 0 1 1-1h3.1l1.4 1.6h5.9a1 1 0 0 1 1 1v6.4a1 1 0 0 1-1 1H2.8a1 1 0 0 1-1-1V4.2z");
+  svg.append(p); ic.append(svg);
+  return ic;
+}
+function emptyState(text){
+  const box = el("div","empty");
+  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("width","34"); svg.setAttribute("height","34");
+  svg.setAttribute("viewBox","0 0 24 24"); svg.setAttribute("fill","none");
+  svg.setAttribute("stroke","currentColor"); svg.setAttribute("stroke-width","1.4");
+  const p = document.createElementNS("http://www.w3.org/2000/svg","path");
+  p.setAttribute("d","M3.5 6.5h17v12a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5v-12zM3 3.5h18v3H3zM9.5 11h5");
+  svg.append(p); box.append(svg, document.createTextNode(text));
+  return box;
+}
+
+/* ================= список обращений ================= */
+function matches(c){
+  if(c.status === "archived") return false;
+  if(filter !== "all" && c.status !== filter) return false;
+  if(!query) return true;
+  const q = query.toLowerCase();
+  const ik = c.intake || {};
+  return (c.name+" "+c.un+" "+(ik.org||"")+" "+(ik.key||"")+" "+c.topic+" "+c.tags.join(" ")+" "+
+          c.msgs.map(x => x.t).join(" ")).toLowerCase().includes(q);
+}
+
+function renderStats(){
+  const box = $("#stats");
+  box.textContent = "";
+  const active = convs.filter(c => c.status !== "closed" && c.status !== "archived").length;
+  const hot = convs.filter(c => c.unread > 0 && c.status !== "archived").length;
+  const live = convs.filter(c => c.status !== "archived" && presence(c).k !== "red").length;
+  const add = (cls, n, label) => {
+    const s = el("div","stat"+(cls?" "+cls:""));
+    s.append(el("b",null,String(n)), el("span",null,label));
+    box.append(s);
+  };
+  add("", active, "в работе");
+  add("hot", hot, "без ответа");
+  add("live", live, "в чате");
+  const badge = $("#inboxBadge");
+  badge.textContent = String(hot);
+  badge.hidden = hot === 0;
+}
+
+function renderFilters(){
+  const nav = $("#filters");
+  nav.textContent = "";
+  FILTERS.forEach(f => {
+    const n = f.k === "all"
+      ? convs.filter(c => c.status !== "archived").length
+      : convs.filter(c => c.status === f.k).length;
+    const b = el("button","chip");
+    b.type = "button";
+    b.setAttribute("aria-pressed", String(filter === f.k));
+    b.append(document.createTextNode(f.l), el("span","n",String(n)));
+    b.onclick = () => { filter = f.k; renderFilters(); renderList(); };
+    nav.append(b);
+  });
+}
+
+function renderList(){
+  const ul = $("#convList");
+  ul.textContent = "";
+  const items = convs.filter(matches).sort((a,b) => lastMsg(b).ts - lastMsg(a).ts);
+
+  if(!items.length){
+    const li = el("li");
+    li.append(emptyState(booting || (query ? "Ничего не нашлось по запросу «"+query+"»" : "Здесь пусто")));
+    ul.append(li);
+    renderStats();
+    return;
+  }
+
+  items.forEach(c => {
+    const lm = lastMsg(c);
+    const li = el("li");
+    const b = el("button","conv"+(c.unread ? " unread" : ""));
+    b.type = "button";
+    b.setAttribute("aria-current", String(c.id === activeId));
+
+    const main = el("div");
+    const r1 = el("div","row1");
+    r1.append(el("span","nm", c.name), el("span","tm", relTime(lm.ts)));
+    const prev = el("div","prev", (lm.dir === "out" ? "Вы: " : "") + (lm.att && !lm.t ? lm.att.n : lm.t));
+    const r3 = el("div","row3");
+    r3.append(el("span","badge "+c.status, STATUS_L[c.status]));
+    const rowMood = clientOf(c) ? moodChip(clientOf(c).mood) : null;
+    if(rowMood) r3.append(rowMood);
+    c.tags.slice(0, rowMood ? 1 : 2).forEach(t => r3.append(el("span","tag", t)));
+    if(c.unread) r3.append(el("span","cnt", String(c.unread)));
+    main.append(r1, prev, r3);
+
+    b.append(avatarBlock(c), main);
+    b.onclick = () => openConv(c.id);
+    li.append(b);
+    ul.append(li);
+  });
+  renderStats();
+}
+
+function tickPresence(){
+  document.querySelectorAll(".live[data-conv]").forEach(node => {
+    const c = byId(node.dataset.conv);
+    if(!c) return;
+    const pr = presence(c);
+    node.className = "live "+pr.k;
+    node.title = pr.label;
+  });
+  const c = byId(activeId), pill = $("#livePill");
+  if(c && pill){
+    const pr = presence(c);
+    pill.className = "livepill "+pr.k;
+    pill.textContent = "";
+    pill.append(el("i"), document.createTextNode(pr.label));
+  }
+  renderStats();
+}
+
+/* ================= переписка ================= */
+function intakeCard(c){
+  const ik = c.intake;
+  const box = el("div","intake");
+  const head = el("header");
+  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("width","14"); svg.setAttribute("height","14");
+  svg.setAttribute("viewBox","0 0 16 16"); svg.setAttribute("fill","none");
+  svg.setAttribute("stroke","currentColor"); svg.setAttribute("stroke-width","1.8");
+  svg.setAttribute("stroke-linecap","round"); svg.setAttribute("stroke-linejoin","round");
+  const p = document.createElementNS("http://www.w3.org/2000/svg","path");
+  p.setAttribute("d","M3 8.4l3 3 7-7"); svg.append(p);
+  // Анкета теперь идёт параллельно с вопросом — показываем, на каком она этапе
+  const st = ik.status || "done";
+  const HEAD = {done:"Анкета заполнена", active:"Клиент заполняет анкету",
+                skipped:"Клиент отложил анкету", none:"Анкета ещё не заполнена"};
+  box.classList.add("st-" + st);
+  head.append(svg, document.createTextNode(HEAD[st] || HEAD.done));
+  if(st === "done") head.append(el("span","when", clock(ik.at)));
+  box.append(head);
+
+  const dl = document.createElement("dl");
+  const f = (label, value, mono) => {
+    const cell = el("div","f");
+    cell.append(el("dt",null,label));
+    const empty = !value || value === "—";
+    const dd = el("dd", (mono && !empty ? "mono" : "") + (value === "нет ключа" || empty ? " miss" : ""),
+                  empty ? "не указано" : value);
+    cell.append(dd);
+    dl.append(cell);
+  };
+  f("Ключ / лицензия", ik.key, true);
+  f("Организация", ik.org);
+  f("Имя и фамилия", ik.fio);
+  f("Телефон", ik.phone, true);
+  box.append(dl);
+  return box;
+}
+
+/* Картинку показываем сразу: оператору важно увидеть скриншот ошибки,
+   а не имя файла. Остальные файлы остаются ссылкой на скачивание. */
+function attachment(att){
+  const isImage = (att.kind || "").indexOf("image") === 0 ||
+                  /\.(jpe?g|png|gif|webp|bmp|heic)$/i.test(att.n || "");
+
+  if(att.url && isImage){
+    const a = el("a","shotwrap");
+    a.href = att.url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.title = att.n + (att.s ? " · " + att.s : "");
+    const img = document.createElement("img");
+    img.className = "shot";
+    img.src = att.url;
+    img.alt = att.n || "Вложение";
+    img.loading = "lazy";
+    a.append(img);
+    return a;
+  }
+
+  const box = att.url ? el("a","att") : el("div","att");
+  if(att.url){ box.href = att.url; box.target = "_blank"; box.rel = "noopener"; box.download = att.n; }
+  box.append(el("span","ic", att.k), el("span",null, att.n), el("span","sz", att.s));
+  return box;
+}
+
+function renderThread(){
+  const c = byId(activeId);
+  const box = $("#msgs");
+  if(!c){
+    $("#deleteBtn").hidden = true;
+    $("#tName").textContent = "—";
+    $("#tSub").textContent = "";
+    $("#inbox").dataset.idle = "1";
+    renderIdle();
+    return;
+  }
+  delete $("#inbox").dataset.idle;
+  box.textContent = "";
+
+  $("#tName").textContent = c.name;
+  const sub = $("#tSub");
+  sub.textContent = "";
+  const pl = el("span","pill");
+  pl.append(el("span","dot "+c.provider), document.createTextNode(PROVIDER_L[c.provider]));
+  const pr = presence(c);
+  const live = el("span","livepill "+pr.k);
+  live.id = "livePill";
+  live.append(el("i"), document.createTextNode(pr.label));
+  sub.append(pl, live, el("span",null,"id "+c.ext));
+  $("#statusSel").value = c.status;
+  $("#archiveBtn").querySelector("span").textContent = c.status === "archived" ? "Сменить папку" : "В архив";
+  $("#deleteBtn").hidden = c.status !== "archived";
+
+  // Первое, что должен увидеть менеджер, — с кем он сейчас говорит
+  const threadClient = clientOf(c);
+  if(threadClient){
+    const bar = moodBar(threadClient);
+    if(bar) box.append(bar);
+  }
+
+  if(c.intake) box.append(intakeCard(c));
+
+  let lastDay = "", lastDir = "";
+  c.msgs.forEach(msg => {
+    const dl = dayLabel(msg.ts);
+    if(dl !== lastDay){ box.append(el("div","daysep", dl)); lastDay = dl; lastDir = ""; }
+    if(msg.dir === "sys"){ box.append(el("div","sys", msg.t)); lastDir = ""; return; }
+
+    const wrap = el("div","m "+msg.dir+(msg.dir !== lastDir ? " first" : ""));
+    if(msg.t) wrap.append(el("div","bub", msg.t));
+    if(msg.att) wrap.append(attachment(msg.att));
+    const meta = el("div","meta");
+    meta.append(el("span",null, clock(msg.ts)));
+    if(msg.dir === "out"){
+      const label = msg.st === "read" ? "✓✓ прочитано" : msg.st === "delivered" ? "✓✓ доставлено" : "✓ отправлено";
+      meta.append(el("span", msg.st === "read" ? "ok" : null, label));
+    }
+    wrap.append(meta);
+    box.append(wrap);
+    lastDir = msg.dir;
+  });
+
+  if(typingIn === c.id){
+    const t = el("div","typing");
+    t.append(el("i"),el("i"),el("i"));
+    box.append(t);
+  }
+  box.scrollTop = box.scrollHeight;
+}
+
+/* ================= свёрнутый чат =================
+   Когда ни одно обращение не открыто, справа — тихий экран: кто дольше
+   всех ждёт ответа и один полезный совет. Шар медленно «дышит»; клик
+   по нему — следующий совет. Ничего не мигает и не требует внимания. */
+const TIPS = [
+  "Enter — отправить ответ, Shift+Enter — новая строка.",
+  "Кнопка «Шаблоны» вставляет готовый ответ — его можно поправить перед отправкой.",
+  "Esc сворачивает открытый чат и возвращает этот экран.",
+  "В архиве строка «Спросить у базы» считает: «сколько обращений про АРПС за месяц».",
+  "Пометка о манере клиента всплывёт плашкой при его следующем обращении.",
+  "Календарь в левой панели: клик по дню — обращения, ушедшие в архив в этот день.",
+  "Скриншот можно отправить клиенту кнопкой «Файл» — он придёт картинкой, а не вложением."
+];
+let tipIdx = Math.floor(Math.random() * TIPS.length);
+
+function closeChat(){
+  activeId = null;
+  chatClosed = true;
+  typingIn = null;
+  $("#inbox").dataset.view = "list";
+  renderList(); renderThread(); renderCard();
+}
+
+function waitingConvs(){
+  return convs.filter(c => c.status !== "archived" && c.status !== "closed")
+    .map(c => ({c, lm: lastMsg(c)}))
+    .filter(x => x.lm.dir === "in" && x.lm.ts)
+    .sort((a,b) => a.lm.ts - b.lm.ts);
+}
+
+/* Анекдоты для колонки на тихом экране — про сметчиков и поддержку.
+   Каждый день начинается со своего, кнопка «Ещё» листает дальше. */
+const JOKES = [
+  "Оптимист видит стакан наполовину полным, пессимист — наполовину пустым. Сметчик видит, что стакан не учтён в ресурсной ведомости.",
+  "У каждого сметчика есть файлы «Итоговая», «Итоговая_2», «Итоговая_точно» и «Итоговая_последняя_правда».",
+  "Если смета сошлась с первого раза — проверьте, ту ли смету вы открыли.",
+  "Сметчик не опаздывает. Он применяет понижающий коэффициент ко времени прибытия.",
+  "Экспертиза вернула смету всего с одним замечанием. Сметчик записал этот день в лучшие дни года.",
+  "Клиент прислал скриншот ошибки: сфотографирован на телефон, под углом, с бликом от лампы. Специалист всё понял с первого взгляда — опыт.",
+  "— Сколько сметчиков нужно, чтобы вкрутить лампочку?\n— Один вкрутит, трое будут спорить, по какой расценке.",
+  "Индексы обновили в пятницу вечером. Совпадение? Сметчики так не думают.",
+  "Сметчик на свидании: «Давай сначала согласуем объёмы, а о цене поговорим потом».",
+  "Самое страшное слово для сметчика — не «ошибка», а «а можно ещё одну маленькую правочку?».",
+  "Отпуск сметчика состоит из двух этапов: подготовительного и выгрузки в АРПС.",
+  "— Как понять, что сметчик в отпуске?\n— Он считает шезлонги на пляже по ГЭСН.",
+  "Сметчик не спорит с заказчиком. Он молча добавляет строку «непредвиденные затраты».",
+  "Лучший подарок сметчику — заказчик, который дочитал пояснительную записку.",
+  "Поддержка на связи круглосуточно. Кофемашина тоже, но её согласия никто не спрашивал.",
+  "«Ключ не видит!» — написал клиент. Специалист час проверял драйвер, пока не выяснилось, что ключ остался в другой куртке.",
+  "Клиент: «У меня всё сломалось!»\nПоддержка: «Что именно?»\nКлиент: «Настроение. А программа — просто повод написать».",
+  "Новичок спросил, сколько стоит ремонт. Сметчик ответил: «Смотря в какой базе, в каком квартале и какое настроение у экспертизы».",
+  "Специалист ответил так быстро, что клиент ещё не успел описать проблему. И всё равно угадал.",
+  "Сметчика попросили посчитать до десяти. Он уточнил: в базисных ценах или в текущих?"
+];
+let jokeIdx = Math.floor(Date.now() / 86400000) % JOKES.length;
+
+/* ---------- сводка дня ---------- */
+let todayStats = null, todayAt = 0, todayBusy = false;
+
+/* Демо без сервера — считаем по тем сообщениям, что есть в памяти */
+function localToday(){
+  const day0 = new Date(); day0.setHours(0,0,0,0);
+  const t0 = day0.getTime();
+  const st = {new_convs:0, clients:0, in_msgs:0, out_msgs:0, archived:0, waiting:waitingConvs().length,
+              avg_reply_min:null, typical:null};
+  const who = new Set(), perDay = {};
+  let replySum = 0, replyN = 0;
+  convs.forEach(c => {
+    const real = c.msgs.filter(x => x.dir !== "sys");
+    if(!real.length) return;
+    const first = real[0].ts;
+    if(first >= t0) st.new_convs++;
+    else if(first >= t0 - d(14)){ const k = dayKey(first); perDay[k] = (perDay[k]||0) + 1; }
+    let pendingIn = null;
+    real.forEach(x => {
+      if(x.ts >= t0 && x.dir === "in"){ st.in_msgs++; who.add(c.id); }
+      if(x.ts >= t0 && x.dir === "out") st.out_msgs++;
+      if(x.dir === "in" && pendingIn === null) pendingIn = x.ts;
+      if(x.dir === "out" && pendingIn !== null){
+        if(pendingIn >= t0){ replySum += x.ts - pendingIn; replyN++; }
+        pendingIn = null;
+      }
+    });
+    if(c.status === "archived" && archivedAt(c) >= t0) st.archived++;
+  });
+  st.clients = who.size;
+  if(replyN) st.avg_reply_min = Math.round(replySum / replyN / 6000) / 10;
+  const days = Object.keys(perDay);
+  if(days.length) st.typical = Math.round(days.reduce((a,k) => a + perDay[k], 0) / days.length * 10) / 10;
+  return st;
+}
+
+function fetchToday(){
+  if(!LIVE) return;                        // демо считается на месте, кэш не нужен
+  if(todayBusy || Date.now() - todayAt < 30000) return;
+  todayBusy = true;
+  api("/api/today")
+    .then(st => { todayStats = st; todayAt = Date.now(); if(!activeId && section === "inbox") renderIdle(); })
+    .catch(e => console.warn("сводка дня не получена:", e.message))
+    .finally(() => { todayBusy = false; });
+}
+
+/* Оценка дня: сравниваем поток с обычным к этому часу рабочего дня,
+   добавляем очередь и скорость ответа. Четыре ступени — от спокойного
+   до аврала. */
+const LOADS = [
+  {n:"Спокойный день",   c:"var(--ok)"},
+  {n:"Обычный день",     c:"var(--acc)"},
+  {n:"Напряжённый день", c:"var(--warn)"},
+  {n:"Аврал",            c:"var(--crit)"}
+];
+function dayLoad(st){
+  const now = new Date();
+  const hr = now.getHours() + now.getMinutes() / 60;
+  const frac = Math.min(1, Math.max(0.15, (hr - 9) / 9));    // к этому часу обычно пришла такая доля
+  const typical = st.typical || 5;                            // истории ещё нет — считаем обычным ~5 в день
+  const expected = typical * frac;
+  const ratio = st.new_convs / Math.max(expected, 1);
+
+  let score = ratio < 0.6 ? 0 : ratio < 1.3 ? 1 : ratio < 2 ? 2 : 3;
+  if(st.waiting >= 5 || (st.avg_reply_min || 0) > 30) score = Math.min(3, score + 1);
+  if(!st.new_convs && !st.waiting) score = 0;
+
+  const why = [];
+  if(!st.new_convs) why.push("новых обращений пока нет");
+  else if(ratio < 0.6) why.push("обращений меньше, чем обычно к этому часу");
+  else if(ratio < 1.3) why.push("поток как обычно");
+  else why.push("обращений в " + (Math.round(ratio * 10) / 10).toString().replace(".", ",") + " раза больше обычного");
+  if(st.waiting) why.push(st.waiting + " " + plural(st.waiting,"клиент ждёт","клиента ждут","клиентов ждут") + " ответа");
+  if(st.avg_reply_min != null) why.push("отвечаем в среднем за " + String(st.avg_reply_min).replace(".", ",") + " мин");
+  return {score, lv:LOADS[score], why:why.join(" · "), guess:!st.typical};
+}
+
+function renderIdle(){
+  const box = $("#msgs");
+  let wrap = box.querySelector(".idle");
+  if(!wrap){
+    box.textContent = "";
+    wrap = el("div","idle");
+    const orb = el("button","orb");
+    orb.type = "button";
+    orb.title = "Следующий совет";
+    orb.setAttribute("aria-label","Следующий совет");
+    orb.append(el("i"), el("i"), el("i"));
+    orb.onclick = () => { tipIdx = (tipIdx + 1) % TIPS.length; renderIdle(); };
+    wrap.append(orb, el("div","idlelive"));
+    box.append(wrap);
+  }
+  fetchToday();
+  // Пока сервер не прислал цифры — не показываем нули, а честно ждём
+  const pending = LIVE && !todayStats;
+  const st = LIVE ? (todayStats || {new_convs:0, clients:0, in_msgs:0, out_msgs:0, archived:0,
+                                     waiting:waitingConvs().length, avg_reply_min:null, typical:null})
+                  : localToday();
+  const live = wrap.querySelector(".idlelive");
+  live.textContent = "";
+
+  const now = new Date(), hr = now.getHours();
+  const hello = hr < 5 ? "Доброй ночи" : hr < 12 ? "Доброе утро" : hr < 18 ? "Добрый день" : hr < 23 ? "Добрый вечер" : "Доброй ночи";
+  live.append(el("h3",null,hello),
+              el("p","idate", WD_FULL[now.getDay()] + ", " + now.getDate() + " " + MONTHS[now.getMonth()] + " · " + clock(now.getTime())));
+
+  const grid = el("div","igrid");
+  const left = el("div","icol");
+
+  /* оценка дня */
+  const load = dayLoad(st);
+  const lc = el("div","icard iload");
+  lc.style.setProperty("--lc", load.lv.c);
+  const lh = el("div","ilh");
+  lh.append(el("b",null,load.lv.n), el("span",null,"оценка дня"));
+  const meter = el("div","imeter");
+  LOADS.forEach((l,i) => {
+    const seg = el("i", i <= load.score ? "on" : "");
+    seg.title = l.n;
+    meter.append(seg);
+  });
+  lc.append(lh, meter, el("p",null, pending ? "Считаю цифры дня…"
+    : load.why + (load.guess ? " · обычный день пока оцениваю грубо — мало истории" : "")));
+  if(pending) lc.classList.add("wait");
+  left.append(lc);
+
+  /* цифры дня */
+  const dc = el("div","icard");
+  dc.append(el("div","ittl","Сегодня"));
+  const cells = el("div","icells");
+  [[st.new_convs, plural(st.new_convs,"новое обращение","новых обращения","новых обращений")],
+   [st.clients, plural(st.clients,"клиент написал","клиента написали","клиентов написали")],
+   [st.in_msgs, plural(st.in_msgs,"сообщение от клиентов","сообщения от клиентов","сообщений от клиентов")],
+   [st.out_msgs, plural(st.out_msgs,"ответ отправлен","ответа отправлено","ответов отправлено")],
+   [st.archived, "ушло в архив"],
+   [st.avg_reply_min == null ? "—" : String(st.avg_reply_min).replace(".", ","), "мин — средний ответ"]
+  ].forEach(p => {
+    const d = el("div");
+    d.append(el("b",null, pending ? "…" : String(p[0])), el("span",null,p[1]));
+    cells.append(d);
+  });
+  dc.append(cells);
+  left.append(dc);
+
+  /* кто ждёт */
+  const wait = waitingConvs();
+  if(wait.length){
+    const wc = el("div","icard");
+    wc.append(el("div","ittl","Дольше всех ждут"));
+    const list = el("div","iwait");
+    wait.slice(0,3).forEach(x => {
+      const b = el("button","iw");
+      b.type = "button";
+      const t = el("div","iwt");
+      t.append(el("b",null,x.c.name), el("span",null, x.lm.att && !x.lm.t ? x.lm.att.n : x.lm.t));
+      b.append(avatarBlock(x.c, 34), t, el("em",null, relAgo(Date.now() - x.lm.ts).replace(" назад","")));
+      b.onclick = () => openConv(x.c.id);
+      list.append(b);
+    });
+    wc.append(list);
+    left.append(wc);
+  } else {
+    left.append(el("div","icalm","Все ответы даны. Можно выдохнуть."));
+  }
+
+  /* колонка анекдотов */
+  const jc = el("div","icard ijoke");
+  const jh = el("div","ijh");
+  jh.append(el("span","ijicon","☺"), el("b",null,"Анекдот"), el("span","ijn", (jokeIdx + 1) + " / " + JOKES.length));
+  const jt = el("p","ijt", JOKES[jokeIdx]);
+  const more = el("button","ibtn","Ещё один");
+  more.type = "button";
+  more.onclick = () => { jokeIdx = (jokeIdx + 1) % JOKES.length; renderIdle(); };
+  jc.append(jh, jt, more);
+
+  grid.append(left, jc);
+  live.append(grid);
+
+  const tip = el("button","itip");
+  tip.type = "button";
+  tip.title = "Следующий совет";
+  tip.append(el("span",null,"совет"), document.createTextNode(TIPS[tipIdx]));
+  tip.onclick = () => { tipIdx = (tipIdx + 1) % TIPS.length; renderIdle(); };
+  live.append(tip);
+}
+setInterval(() => {
+  if(activeId) return;
+  tipIdx = (tipIdx + 1) % TIPS.length;
+  if(section === "inbox") renderIdle();
+}, 30000);
+
+/* ================= карточка клиента ================= */
+function renderCard(){
+  const c = byId(activeId);
+  const box = $("#cbody");
+  box.textContent = "";
+  if(!c) return;
+  const ik = c.intake || {};
+
+  const p = el("div","cperson");
+  const who = el("div");
+  who.append(el("div","nm", c.name), el("div","un", c.un));
+  p.append(avatarBlock(c, 48), who);
+
+  const dl = el("dl","info");
+  const pair = (k,v,cls) => { dl.append(el("dt",null,k), el("dd", cls||null, v)); };
+  pair("Канал", PROVIDER_L[c.provider]);
+  pair("ID в мессенджере", c.ext, "mono");
+  pair("Телефон", ik.phone || "—", "mono");
+  pair("Организация", ik.org || "—");
+  pair("Ключ / лицензия", ik.key || "—", "mono");
+  pair("Продукт", c.product);
+  pair("Версия", c.ver, "mono");
+  pair("Сопровождение", c.support, c.support.indexOf("нет") === 0 ? "due" : "mono");
+  pair("Ответственный", c.assignee);
+  const days = Math.round(c.since/86400000);
+  pair("Клиент", days > 365
+    ? Math.floor(days/365)+" "+plural(Math.floor(days/365),"год","года","лет")
+    : days+" "+plural(days,"день","дня","дней"));
+  box.append(p, dl);
+
+  const cardClient = clientOf(c);
+  if(cardClient){
+    const s = el("div","sect");
+    const h = el("h3",null,"Как разговаривать");
+    s.append(h);
+    const chip = moodChip(cardClient.mood);
+    if(chip){
+      s.append(chip);
+      s.append(el("div","kv", MBY[cardClient.mood].hint));
+      s.lastChild.style.marginTop = "7px";
+      s.lastChild.style.color = "var(--ink-3)";
+      s.lastChild.style.fontFamily = "var(--sans)";
+      s.lastChild.style.fontSize = "11.5px";
+      s.lastChild.style.lineHeight = "1.45";
+    } else {
+      s.append(el("div","kv","пометки пока нет — поставьте при отправке в архив"));
+    }
+    const open = el("button","ibtn","Открыть в базе клиентов");
+    open.type = "button";
+    open.style.marginTop = "11px";
+    open.onclick = () => { openClient = cardClient.id; setSection("clients"); };
+    s.append(open);
+    box.append(s);
+  }
+
+  if(c.status === "archived"){
+    const list = foldersOf(c).map(k => FBY[k] || UNDEF);
+    const s = el("div","sect");
+    s.append(el("h3",null, list.length > 1 ? "Папки архива" : "Папка архива"));
+    (list.length ? list : [UNDEF]).forEach(f => {
+      const fb = el("div","folderbox");
+      fb.append(folderIcon(f, 30), el("span",null,(f.g ? f.g.n + " › " : "") + f.n));
+      s.append(fb);
+    });
+    box.append(s);
+  }
+
+  const sT = el("div","sect");
+  sT.append(el("h3",null,"Теги"));
+  const tags = el("div","tags");
+  c.tags.forEach(t => {
+    const sp = el("span","tag", t);
+    const x = el("button",null,"×");
+    x.type = "button"; x.title = "Убрать тег";
+    x.onclick = () => { c.tags = c.tags.filter(v => v !== t); renderCard(); renderList(); };
+    sp.append(x); tags.append(sp);
+  });
+  const add = el("button","tag addtag","+ тег");
+  add.type = "button";
+  add.onclick = () => { const v = prompt("Новый тег"); if(v && v.trim()){ c.tags.push(v.trim().slice(0,20)); renderCard(); renderList(); } };
+  tags.append(add); sT.append(tags);
+
+  const sN = el("div","sect");
+  sN.append(el("h3",null,"Заметка оператора"));
+  const ta = el("textarea","note");
+  ta.id = "noteBox"; ta.value = c.note; ta.placeholder = "Видна только вашей команде";
+  const hint = el("div","savedhint");
+  let tmr;
+  ta.oninput = () => {
+    c.note = ta.value;
+    clearTimeout(tmr);
+    tmr = setTimeout(() => {
+      const done = () => { hint.textContent = "сохранено"; setTimeout(() => { hint.textContent = ""; }, 1400); };
+      if(LIVE){
+        api("/api/conversations/" + c.sid, {method:"PATCH", body:JSON.stringify({note:c.note})})
+          .then(done)
+          .catch(err => { hint.textContent = "не сохранилось"; console.warn(err.message); });
+      } else done();
+    }, 500);
+  };
+  sN.append(ta, hint);
+  box.append(sT, sN);
+}
+
+/* ================= раздел «Архив» ================= */
+let aMode = "find";          // find — найти обращение, ask — спросить у базы цифры
+let calMonth = null;         // первое число показанного месяца
+let calDay = null;           // выбранный день "ГГГГ-ММ-ДД" или null
+let askState = null;         // {q, loading, res}
+
+const archivedAt = c => c.archivedAt || lastMsg(c).ts;
+const dayKey = ts => { const t = new Date(ts); return t.getFullYear()+"-"+pad(t.getMonth()+1)+"-"+pad(t.getDate()); };
+const foldersOf = c => (c.folders && c.folders.length) ? c.folders : (c.folder ? [c.folder] : []);
+const inFolder = (c, key) => GBY[key]
+  ? foldersOf(c).some(k => FBY[k] && FBY[k].g === GBY[key])
+  : foldersOf(c).includes(key);
+const countIn = (list, key) => list.filter(c => inFolder(c, key)).length;
+
+/* ---------- календарь ---------- */
+const WD = ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
+const WD_FULL = ["воскресенье","понедельник","вторник","среда","четверг","пятница","суббота"];
+const MONTH_N = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+
+function renderCalendar(){
+  const box = $("#calBox");
+  if(!box) return;
+  box.textContent = "";
+  const now = new Date();
+  if(!calMonth) calMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  // Шапка — сегодняшний день крупно, на неё и приятно смотреть
+  const hero = el("div","calhero");
+  const big = el("div","cbig", String(now.getDate()));
+  const side = el("div","cside");
+  side.append(el("b",null, MONTHS[now.getMonth()] + " " + now.getFullYear()),
+              el("span",null, WD_FULL[now.getDay()]),
+              el("i","cclock", clock(now.getTime())));
+  hero.append(big, side);
+  box.append(hero);
+
+  // Сколько обращений ушло в архив по дням — оттенок ячейки
+  const per = {};
+  convs.filter(c => c.status === "archived").forEach(c => {
+    const k = dayKey(archivedAt(c)); per[k] = (per[k]||0) + 1;
+  });
+  const max = Math.max(1, ...Object.values(per));
+
+  const nav = el("div","calnav");
+  const prev = el("button","iconbtn","‹"); prev.type = "button"; prev.setAttribute("aria-label","Предыдущий месяц");
+  const next = el("button","iconbtn","›"); next.type = "button"; next.setAttribute("aria-label","Следующий месяц");
+  prev.onclick = () => { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()-1, 1); renderCalendar(); };
+  next.onclick = () => { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 1); renderCalendar(); };
+  const title = el("button","calttl", MONTH_N[calMonth.getMonth()] + " " + calMonth.getFullYear());
+  title.type = "button"; title.title = "К текущему месяцу";
+  title.onclick = () => { calMonth = new Date(now.getFullYear(), now.getMonth(), 1); renderCalendar(); };
+  nav.append(prev, title, next);
+  box.append(nav);
+
+  const grid = el("div","calgrid");
+  WD.forEach((w,i) => grid.append(el("span","wd"+(i>4?" we":""), w)));
+  const first = (calMonth.getDay() + 6) % 7;            // с понедельника
+  const days = new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 0).getDate();
+  for(let i = 0; i < first; i++) grid.append(el("span","cd blank"));
+  let monthTotal = 0;
+  for(let dnum = 1; dnum <= days; dnum++){
+    const dt = new Date(calMonth.getFullYear(), calMonth.getMonth(), dnum);
+    const k = dayKey(dt.getTime());
+    const n = per[k] || 0;
+    monthTotal += n;
+    const b = el("button","cd");
+    b.type = "button";
+    if(dt.getDay() === 0 || dt.getDay() === 6) b.classList.add("we");
+    if(k === dayKey(now.getTime())) b.classList.add("today");
+    if(k === calDay) b.classList.add("sel");
+    if(n){ b.classList.add("has"); b.style.setProperty("--heat", String(0.18 + 0.62 * n / max)); }
+    b.append(el("span",null,String(dnum)));
+    if(n) b.append(el("i", "cdot"));
+    b.title = n ? n + " " + plural(n,"обращение","обращения","обращений") + " в архив" : "";
+    b.onclick = () => { calDay = calDay === k ? null : k; openFolder = null; closeCal(); setSection("archive"); };
+    grid.append(b);
+  }
+  box.append(grid);
+
+  const foot = el("div","calfoot");
+  foot.append(el("b",null,String(monthTotal)),
+              document.createTextNode(" " + plural(monthTotal,"обращение","обращения","обращений") + " ушло в архив за " + MONTH_N[calMonth.getMonth()].toLowerCase()));
+  box.append(foot);
+  if(calDay){
+    const clr = el("button","ibtn wide","Показать все дни");
+    clr.type = "button";
+    clr.onclick = () => { calDay = null; closeCal(); if(section === "archive") renderArchive(); };
+    box.append(clr);
+  }
+}
+/* Листок календаря в левой панели: месяц и число, по клику — весь месяц */
+const MON_SHORT = ["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
+function tickCalMini(){
+  const now = new Date();
+  $("#calMiniM").textContent = MON_SHORT[now.getMonth()];
+  $("#calMiniD").textContent = String(now.getDate());
+  $("#calBtn").querySelector(".rtip").textContent = "Календарь · " + now.getDate() + " " + MONTHS[now.getMonth()] + ", " + WD_FULL[now.getDay()];
+  const c = document.querySelector(".cclock");
+  if(c) c.textContent = clock(now.getTime());
+}
+function closeCal(){ $("#calBox").hidden = true; $("#calBtn").setAttribute("aria-expanded","false"); }
+$("#calBtn").onclick = e => {
+  e.stopPropagation();
+  const box = $("#calBox");
+  box.hidden = !box.hidden;
+  $("#calBtn").setAttribute("aria-expanded", String(!box.hidden));
+  if(!box.hidden){ $("#skinMenu").hidden = true; renderCalendar(); }
+};
+$("#calBox").addEventListener("click", e => e.stopPropagation());
+document.addEventListener("click", () => { if(!$("#calBox").hidden) closeCal(); });
+document.addEventListener("keydown", e => {
+  // Esc сначала закрывает календарь — и больше ничего
+  if(e.key === "Escape" && !$("#calBox").hidden){ closeCal(); e.stopImmediatePropagation(); }
+});
+tickCalMini();
+setInterval(tickCalMini, 20000);
+
+/* ---------- строка «спросить у базы» ---------- */
+const ASK_EXAMPLES = [
+  "Сколько пользователей написало про драйвер в сентябре?",
+  "Сколько разговоров закончилось на 5-й минуте в этом месяце?",
+  "Обращения по темам за месяц",
+  "Обращения по разделам",
+  "Среднее время разговора за 30 дней",
+  "Обращения по дням за 14 дней"
+];
+const ASK_RX = /^\s*(сколько|скольк|какой|какая|какие|каков|кто|средн|топ|статистик|покажи|в каком|по месяц|по дням|по тем)/i;
+
+function setMode(mode){
+  aMode = mode;
+  $("#modeFind").setAttribute("aria-pressed", String(mode === "find"));
+  $("#modeAsk").setAttribute("aria-pressed", String(mode === "ask"));
+  $("#aq").placeholder = mode === "ask"
+    ? "Спросите цифрами: сколько пользователей написало про АРПС в сентябре?"
+    : "Например: не видит ключ";
+  $(".asearch").classList.toggle("ask", mode === "ask");
+  renderArchive();
+}
+
+function runAsk(q){
+  q = q.trim();
+  if(!q) return;
+  askState = {q:q, loading:true, res:null};
+  renderArchive();
+  const hist = store.get("askHist", []).filter(x => x !== q);
+  hist.unshift(q); store.set("askHist", hist.slice(0,6));
+
+  if(!LIVE){
+    askState = {q:q, loading:false, res:{ok:false,
+      answer:"В демо-режиме считать не из чего: строка отвечает по настоящей базе, когда пульт открыт с сервера."}};
+    renderArchive();
+    return;
+  }
+  api("/api/ask?q=" + encodeURIComponent(q))
+    .then(res => { if(askState && askState.q === q){ askState = {q:q, loading:false, res:res}; renderArchive(); } })
+    .catch(e => {
+      // 404 — страница новая, а сервер ещё старый: строке не к кому обратиться
+      const msg = /not found|404/i.test(e.message)
+        ? "Сервер запущен в старой версии и пока не умеет отвечать. Перезапустите «Турбопульт — запустить» и спросите снова."
+        : "Не получилось: " + e.message;
+      askState = {q:q, loading:false, res:{ok:false, answer:msg}};
+      renderArchive();
+    });
+}
+
+function askCard(){
+  const card = el("div","askcard");
+  if(!askState){
+    card.classList.add("intro");
+    card.append(el("b",null,"Спросите у базы что угодно"),
+                el("p",null,"Считает по всем обращениям: сколько людей, по каким темам, в какие дни, сколько длились разговоры. Нажмите Enter, чтобы спросить."));
+    const ex = el("div","askex");
+    const hist = store.get("askHist", []);
+    (hist.length ? hist.concat(ASK_EXAMPLES).slice(0,6) : ASK_EXAMPLES).forEach(t => {
+      const b = el("button","askchip", t);
+      b.type = "button";
+      b.onclick = () => { $("#aq").value = t; aQuery = t; runAsk(t); };
+      ex.append(b);
+    });
+    card.append(ex);
+    return card;
+  }
+
+  const q = el("div","askq");
+  q.append(el("span","qm","?"), el("span",null, askState.q));
+  card.append(q);
+  if(askState.loading){ card.append(el("div","askload","Считаю…")); return card; }
+
+  const r = askState.res || {};
+  if(!r.ok){ card.append(el("div","askerr", r.answer || "Не понял вопрос")); return card; }
+
+  if(r.value != null && !r.rows){
+    const big = el("div","askbig");
+    big.append(el("b",null, String(r.value).replace(".", ",")), el("span",null, r.unit || ""));
+    card.append(big);
+  } else if(r.rows){
+    card.append(el("div","asktitle", r.title || r.answer));
+    if(r.chart === "bar" && r.rows.length && typeof r.rows[0][1] === "number"){
+      const mx = Math.max(1, ...r.rows.map(x => x[1] || 0));
+      const bars = el("div","askbars");
+      r.rows.forEach(row => {
+        const line = el("div","abar");
+        const fill = el("i"); fill.style.width = Math.max(2, 100 * (row[1]||0) / mx) + "%";
+        const track = el("span","track"); track.append(fill);
+        line.append(el("span","lbl", String(row[0] == null ? "—" : row[0])), track, el("b",null,String(row[1])));
+        bars.append(line);
+      });
+      card.append(bars);
+    } else {
+      const t = el("table","asktbl");
+      const hr = el("tr");
+      (r.columns || []).forEach(cn => hr.append(el("th",null,cn)));
+      t.append(hr);
+      r.rows.forEach(row => {
+        const tr = el("tr");
+        row.forEach(v => tr.append(el("td",null, v == null ? "—" : String(v))));
+        t.append(tr);
+      });
+      card.append(t);
+    }
+  }
+  const meta = el("div","askmeta");
+  if(r.understood) meta.append(el("span",null,"Понял так: " + r.understood));
+  meta.append(el("span","eng", r.engine === "claude" ? "отвечает Claude" : "встроенный разбор"));
+  card.append(meta);
+  return card;
+}
+
+/* ---------- плитки папок ---------- */
+function folderTile(f, n, opts){
+  const b = el("button","ftile" + (n ? "" : " zero"));
+  b.type = "button";
+  b.style.setProperty("--fc", f.c);
+  b.append(el("span","tn", f.n));
+  if(opts && opts.count !== false) b.append(el("span","tc", String(n)));
+  return b;
+}
+
+function folderTree(list, onPick, opts){
+  opts = opts || {};
+  const wrap = el("div","ftree" + (opts.compact ? " compact" : ""));
+  const q = (opts.filter || "").toLowerCase();
+  let shown = 0;
+  GROUPS.forEach(g => {
+    const gMatch = !q || g.n.toLowerCase().includes(q);
+    const kids = g.kids.filter(f => gMatch || f.n.toLowerCase().includes(q));
+    if(!kids.length) return;
+    shown++;
+    const card = el("section","fgroup");
+    card.style.setProperty("--fc", g.c);
+    const head = el(opts.compact ? "div" : "button","fghead");
+    if(!opts.compact){ head.type = "button"; head.onclick = () => onPick(g.k, true); head.title = "Все обращения раздела"; }
+    const t = el("div","ft");
+    t.append(el("b",null,g.n), el("span",null,g.hint));
+    head.append(folderIcon(g, opts.compact ? 30 : 38), t);
+    if(opts.count !== false) head.append(el("span","fc", String(countIn(list, g.k))));
+    card.append(head);
+    const tiles = el("div","ftiles");
+    kids.forEach(f => {
+      const tile = folderTile(f, countIn(list, f.k), opts);
+      const sel = Array.isArray(opts.selected) ? opts.selected.includes(f.k) : opts.selected === f.k;
+      if(sel) tile.setAttribute("aria-pressed","true");
+      tile.onclick = () => onPick(f.k, false);
+      tiles.append(tile);
+    });
+    card.append(tiles);
+    wrap.append(card);
+  });
+  if(!shown) wrap.append(el("div","empty","Подходящей папки нет — отправьте в «Не определённую тему»"));
+  return wrap;
+}
+
+function undefTile(list, onPick, selected){
+  const b = el("button","fundef");
+  b.type = "button";
+  if(selected) b.setAttribute("aria-pressed","true");
+  const t = el("div","ft");
+  t.append(el("b",null,UNDEF.n), el("span",null,UNDEF.hint));
+  b.append(folderIcon(UNDEF, 34), t, el("span","fc", String(countIn(list, "undef"))));
+  b.onclick = () => onPick("undef", false);
+  return b;
+}
+
+/* ---------- экран архива ---------- */
+function renderArchive(){
+  const body = $("#aBody");
+  const hint = $("#aHint");
+  const askBox = $("#askBox");
+  body.textContent = "";
+  askBox.textContent = "";
+  if(!$("#calBox").hidden) renderCalendar();
+  const archived = convs.filter(c => c.status === "archived");
+  $("#aCount").textContent = archived.length + " " + plural(archived.length,"обращение","обращения","обращений") + " в архиве";
+  $("#aClear").hidden = !aQuery;
+
+  /* --- вопрос к базе --- */
+  if(aMode === "ask"){
+    hint.textContent = "Пишите как человеку: период, тему, длительность разговора — Enter, и ответ появится ниже.";
+    askBox.append(askCard());
+  }
+
+  /* --- умный поиск --- */
+  if(aMode === "find" && aQuery.trim()){
+    const res = searchArchive(aQuery);
+    const folders = new Set(res.map(r => r.conv.folder));
+    hint.textContent = res.length
+      ? "Найдено " + res.length + " " + plural(res.length,"обращение","обращения","обращений") +
+        " в " + folders.size + " " + plural(folders.size,"папке","папках","папках") +
+        " · ищем по основам слов, склонение не мешает"
+      : "";
+
+    if(!res.length){
+      body.append(emptyState("По запросу «"+aQuery+"» в архиве ничего нет. Попробуйте другие слова — например «ключ», «арпс», «индексы». А если нужны цифры — переключитесь на «Спросить у базы»."));
+      return;
+    }
+
+    const rows = el("div","rows");
+    res.forEach(r => {
+      const c = r.conv;
+      const b = el("button","rrow");
+      b.type = "button";
+
+      const t = el("div","rt");
+      const l1 = el("div","l1");
+      l1.append(el("b",null,c.name), folderChips(c));
+      t.append(l1);
+
+      const topic = el("div","l1");
+      topic.style.marginTop = "5px";
+      const tp = el("span");
+      tp.style.fontSize = "12.5px";
+      tp.style.color = "var(--ink-3)";
+      tp.append(highlight(c.topic, r.terms));
+      topic.append(tp);
+      t.append(topic);
+
+      const q = el("div","q");
+      q.append(highlight(bestSnippet(c, r.terms), r.terms));
+      t.append(q);
+
+      const why = el("div","why");
+      r.hit.forEach(term => why.append(el("span","tag", term)));
+      if(r.hit.length) t.append(why);
+
+      const side = el("div","rside");
+      side.append(document.createTextNode(dateShort(lastMsg(c).ts)));
+      side.append(el("span","score", "совпадение " + Math.min(99, Math.round(r.score*4)) + "%"));
+
+      b.append(avatarBlock(c), t, side);
+      b.onclick = () => { goInbox(c.id); };
+      rows.append(b);
+    });
+    body.append(rows);
+    return;
+  }
+
+  /* --- один день из календаря --- */
+  if(calDay){
+    if(aMode === "find") hint.textContent = "";
+    const [y, mo, dd] = calDay.split("-").map(Number);
+    const crumb = el("div","crumb");
+    const back = el("button",null,"← Все папки");
+    back.type = "button";
+    back.onclick = () => { calDay = null; renderArchive(); };
+    crumb.append(back, el("span",null,"·"), el("span",null, dd + " " + MONTHS[mo-1] + " " + y));
+    body.append(crumb);
+    const items = archived.filter(c => dayKey(archivedAt(c)) === calDay).sort((a,b) => archivedAt(b) - archivedAt(a));
+    if(!items.length){ body.append(emptyState("В этот день в архив ничего не уходило")); return; }
+    const rows = el("div","rows");
+    items.forEach(c => rows.append(archiveRow(c)));
+    body.append(rows);
+    return;
+  }
+
+  /* --- содержимое раздела или темы --- */
+  if(openFolder){
+    if(aMode === "find") hint.textContent = "";
+    const g = GBY[openFolder] || (FBY[openFolder] && FBY[openFolder].g);
+    const f = FBY[openFolder];
+    const crumb = el("div","crumb");
+    const back = el("button",null,"← Все папки");
+    back.type = "button";
+    back.onclick = () => { openFolder = null; renderArchive(); };
+    crumb.append(back);
+    if(g){
+      crumb.append(el("span",null,"·"));
+      const gb = el("button",null,g.n);
+      gb.type = "button";
+      gb.onclick = () => { openFolder = g.k; renderArchive(); };
+      crumb.append(gb);
+    }
+    if(f && f !== UNDEF){ crumb.append(el("span",null,"›"), el("span",null,f.n)); }
+    if(openFolder === "undef") crumb.append(el("span",null,"·"), el("span",null,UNDEF.n));
+    body.append(crumb);
+
+    // Внутри раздела — его темы плитками, чтобы переключаться в один клик
+    if(g){
+      const tiles = el("div","ftiles inline");
+      tiles.style.setProperty("--fc", g.c);
+      g.kids.forEach(k => {
+        const t = folderTile(k, countIn(archived, k.k));
+        if(openFolder === k.k) t.setAttribute("aria-pressed","true");
+        t.onclick = () => { openFolder = openFolder === k.k ? g.k : k.k; renderArchive(); };
+        tiles.append(t);
+      });
+      body.append(tiles);
+    }
+
+    const items = archived.filter(c => inFolder(c, openFolder))
+                          .sort((a,b) => lastMsg(b).ts - lastMsg(a).ts);
+    if(!items.length){ body.append(emptyState("В этой папке пока пусто")); return; }
+    const rows = el("div","rows");
+    items.forEach(c => rows.append(archiveRow(c)));
+    body.append(rows);
+    return;
+  }
+
+  /* --- дерево папок --- */
+  if(aMode === "find"){
+    hint.textContent = "";
+    hint.append(document.createTextNode("Поиск идёт по всем папкам сразу. Попробуйте: "));
+    ["не видит ключ","выгрузка арпс","индексы","накопительная ведомость"].forEach((ex,i) => {
+      if(i) hint.append(document.createTextNode(" · "));
+      const code = el("code",null,ex);
+      code.onclick = () => { $("#aq").value = ex; aQuery = ex; renderArchive(); };
+      hint.append(code);
+    });
+  }
+
+  body.append(el("div","secttl","Папки"));
+  const pick = key => { openFolder = key; renderArchive(); };
+  body.append(folderTree(archived, pick));
+  body.append(undefTile(archived, pick, false));
+
+  body.append(el("div","secttl","Недавно убрано в архив"));
+  const rows = el("div","rows");
+  archived.slice().sort((a,b) => archivedAt(b) - archivedAt(a)).slice(0,4).forEach(c => rows.append(archiveRow(c)));
+  if(!archived.length) body.append(emptyState("Архив пока пуст"));
+  body.append(rows);
+}
+
+/* Все папки обращения: две чипами, остальные — «+N» */
+function folderChips(c){
+  const box = document.createDocumentFragment();
+  const list = foldersOf(c).map(k => FBY[k] || UNDEF);
+  (list.length ? list : [UNDEF]).slice(0,2).forEach(f => box.append(folderChip(f)));
+  if(list.length > 2){
+    const more = el("span","fchip more","+" + (list.length - 2));
+    more.title = list.slice(2).map(f => f.n).join(", ");
+    box.append(more);
+  }
+  return box;
+}
+function folderChip(f){
+  const fc = el("span","fchip");
+  const dot = el("i"); dot.style.background = f.c;
+  fc.append(dot, document.createTextNode(f.g ? f.g.n + " › " + f.n : f.n));
+  return fc;
+}
+
+function archiveRow(c){
+  const b = el("button","rrow");
+  b.type = "button";
+  const t = el("div","rt");
+  const l1 = el("div","l1");
+  l1.append(el("b",null,c.name), folderChips(c));
+  const topic = el("div","q");
+  topic.textContent = c.topic;
+  t.append(l1, topic);
+  const side = el("div","rside", dateShort(archivedAt(c)));
+  b.append(avatarBlock(c), t, side);
+  b.onclick = () => goInbox(c.id);
+  return b;
+}
+
+/* ================= база клиентов: экран ================= */
+const lastContact = cl => cl.convs.length
+  ? Math.max.apply(null, cl.convs.map(id => lastMsg(byId(id)).ts))
+  : (cl.lastTs || 0);
+
+function clientMatches(cl){
+  if(!cQuery) return true;
+  const q = cQuery.toLowerCase();
+  return (cl.name+" "+cl.un+" "+cl.org+" "+cl.lic+" "+cl.phone+" "+cl.product)
+         .toLowerCase().includes(q);
+}
+
+function clientAvatar(cl, size){
+  const wrap = el("div","avawrap");
+  const ava = el("div","ava", initials(cl.name));
+  ava.style.backgroundImage = "linear-gradient(145deg, color-mix(in srgb, "+cl.color+" 64%, #ffffff), "+cl.color+")";
+  const ch = el("span","ch "+cl.provider, cl.provider === "tg" ? "T" : "M");
+  ch.title = PROVIDER_L[cl.provider];
+  wrap.append(ava, ch);
+  if(size){ wrap.style.width = wrap.style.height = size+"px"; ava.style.width = ava.style.height = size+"px"; }
+  return wrap;
+}
+
+function renderClients(){
+  const body = $("#cliBody");
+  const hint = $("#cliHint");
+  body.textContent = "";
+  $("#cliClear").hidden = !cQuery;
+
+  /* ---- карточка одного клиента ---- */
+  if(openClient && CBY[openClient]){
+    const cl = CBY[openClient];
+    $("#cliTitle").textContent = cl.name;
+    $("#cliLead").textContent = cl.org;
+    $("#cliCount").textContent = cl.convs.length + " " + plural(cl.convs.length,"обращение","обращения","обращений");
+    $("#cliSearchBox").hidden = true;
+    hint.textContent = "";
+
+    const crumb = el("div","crumb");
+    const back = el("button",null,"← Все клиенты");
+    back.type = "button";
+    back.onclick = () => { openClient = null; renderClients(); };
+    crumb.append(back, el("span",null,"·"), el("span",null,cl.name));
+    body.append(crumb);
+
+    const grid = el("div","profile");
+
+    const card = el("div","pcard");
+    const top = el("div","top");
+    const who = el("div");
+    who.append(el("b",null,cl.name), el("span",null,cl.un + " · id " + cl.ext));
+    top.append(clientAvatar(cl, 56), who);
+    card.append(top);
+
+    const dl = el("dl","info");
+    const pair = (k,v,c2) => { dl.append(el("dt",null,k), el("dd", c2||null, v)); };
+    pair("Канал", PROVIDER_L[cl.provider]);
+    pair("Организация", cl.org);
+    pair("Ключ / лицензия", cl.lic, "mono");
+    pair("Телефон", cl.phone, "mono");
+    pair("Продукт", cl.product);
+    pair("Версия", cl.ver, "mono");
+    pair("Сопровождение", cl.support, cl.support.indexOf("нет") === 0 ? "due" : "mono");
+    const days = Math.round(cl.since/86400000);
+    pair("Клиент", days > 365
+      ? Math.floor(days/365)+" "+plural(Math.floor(days/365),"год","года","лет")
+      : days+" "+plural(days,"день","дня","дней"));
+    card.append(dl);
+
+    const ms = el("div","sect");
+    ms.append(el("h3",null,"Как разговаривать"));
+    const pm = el("div","pmoods");
+    MOODS.forEach(mo => {
+      const b = el("button","moodopt");
+      b.type = "button";
+      b.style.setProperty("--mc", mo.c);
+      b.dataset.mood = mo.k;
+      b.setAttribute("aria-pressed", String(cl.mood === mo.k));
+      const t = el("div");
+      t.append(el("b",null,mo.n), el("span",null,mo.hint));
+      b.append(el("i","mo"), t);
+      b.onclick = () => {
+        const next = cl.mood === mo.k ? "" : mo.k;
+        if(LIVE){
+          api("/api/clients/" + cl.cid + "/mood",
+              {method:"POST", body:JSON.stringify({mood:next})})
+            .then(scheduleRefresh)
+            .catch(e => console.warn("пометка не сохранилась:", e.message));
+          return;
+        }
+        cl.mood = next;
+        cl.moodAt = cl.mood ? Date.now() : 0;
+        cl.moodBy = cl.mood ? "Кирилл" : "";
+        saveMoods();
+        renderClients(); renderList();
+        if(clientOf(byId(activeId)) === cl){ renderThread(); renderCard(); }
+      };
+      pm.append(b);
+    });
+    ms.append(pm);
+    if(cl.moodAt){
+      const w = el("div","kv","пометил " + cl.moodBy + " · " + dateShort(cl.moodAt));
+      w.style.marginTop = "9px";
+      ms.append(w);
+    }
+    card.append(ms);
+    grid.append(card);
+
+    const right = el("div");
+    right.append(el("div","secttl","История обращений"));
+    const rows = el("div","rows");
+    cl.convs.map(byId).sort((a,b) => lastMsg(b).ts - lastMsg(a).ts).forEach(c => {
+      const b = el("button","rrow");
+      b.type = "button";
+      const t = el("div","rt");
+      const l1 = el("div","l1");
+      l1.append(el("span","badge "+c.status, STATUS_L[c.status]));
+      if(c.status === "archived") l1.append(folderChips(c));
+      t.append(l1, el("div","q", c.topic));
+      const side = el("div","rside", dateShort(lastMsg(c).ts));
+      b.append(clientAvatar(cl), t, side);
+      b.onclick = () => goInbox(c.id);
+      rows.append(b);
+    });
+    right.append(rows);
+    grid.append(right);
+
+    body.append(grid);
+    return;
+  }
+
+  /* ---- список всех клиентов ---- */
+  $("#cliTitle").textContent = "База клиентов";
+  $("#cliLead").textContent = "Кто обращался, с чем и как с ними разговаривать";
+  $("#cliSearchBox").hidden = false;
+
+  const list = clients.filter(clientMatches).sort((a,b) => lastContact(b) - lastContact(a));
+  const marked = clients.filter(c => c.mood).length;
+  $("#cliCount").textContent = clients.length + " " + plural(clients.length,"клиент","клиента","клиентов");
+  hint.textContent = "Помечено " + marked + " из " + clients.length +
+                     " · пометка ставится при отправке обращения в архив";
+
+  if(!list.length){ body.append(emptyState("По запросу «"+cQuery+"» никого нет")); return; }
+
+  const table = el("div","ctable");
+  list.forEach(cl => {
+    const b = el("button","crow");
+    b.type = "button";
+
+    const c1 = el("div","c1");
+    c1.append(el("b",null,cl.name), el("span",null,cl.org));
+
+    const c2 = el("div","c2");
+    const chip = moodChip(cl.mood);
+    if(chip) c2.append(chip);
+    else {
+      const none = el("span","tag","без пометки");
+      none.style.borderStyle = "dashed";
+      c2.append(none);
+    }
+    c2.append(el("span","kv", cl.lic + " · " + cl.phone));
+
+    const c3 = el("div","c3");
+    if(cl.convs.length){
+      c3.append(el("b",null,String(cl.convs.length)),
+                document.createTextNode(plural(cl.convs.length,"обращение","обращения","обращений")));
+    } else {
+      c3.append(el("b",null,"—"), document.createTextNode("заполняет анкету"));
+    }
+    const when = el("div"); when.textContent = dateShort(lastContact(cl));
+    when.style.marginTop = "4px";
+    c3.append(when);
+
+    b.append(clientAvatar(cl, 50), c1, c2, c3);
+    b.onclick = () => { openClient = cl.id; renderClients(); };
+    table.append(b);
+  });
+  body.append(table);
+}
+
+/* ================= навигация ================= */
+function setSection(name){
+  section = name;
+  $("#viewInbox").classList.toggle("on", name === "inbox");
+  $("#viewClients").classList.toggle("on", name === "clients");
+  $("#viewArchive").classList.toggle("on", name === "archive");
+  $("#navInbox").setAttribute("aria-pressed", String(name === "inbox"));
+  $("#navClients").setAttribute("aria-pressed", String(name === "clients"));
+  $("#navArchive").setAttribute("aria-pressed", String(name === "archive"));
+  if(name === "archive") renderArchive();
+  if(name === "clients") renderClients();
+}
+function goInbox(id){
+  setSection("inbox");
+  openConv(id);
+}
+function openConv(id){
+  activeId = id;
+  chatClosed = false;
+  const c = byId(id);
+  if(c) c.unread = 0;
+  $("#inbox").dataset.view = "thread";
+  renderList(); renderThread(); renderCard();
+
+  // В живом режиме переписка подтягивается только при открытии —
+  // грузить историю всех диалогов сразу незачем
+  if(LIVE && c && !c.loaded){
+    loadMessages(c)
+      .then(() => api("/api/conversations/" + c.sid,
+                      {method:"PATCH", body:JSON.stringify({unread:0})}))
+      .then(() => { if(activeId === id){ renderThread(); renderList(); } })
+      .catch(e => console.warn("не удалось загрузить переписку:", e.message));
+  }
+}
+
+/* ================= действия ================= */
+function pushMsg(c, msg){ msg.id = c.id+"-"+(++c.seq); c.msgs.push(msg); }
+
+function send(){
+  const inp = $("#input");
+  const text = inp.value.trim();
+  const c = byId(activeId);
+  if(!text || !c) return;
+
+  if(LIVE){
+    inp.value = ""; inp.style.height = "auto";
+    $("#sendBtn").disabled = true;
+    api("/api/conversations/" + c.sid + "/reply", {method:"POST", body:JSON.stringify({text:text})})
+      .then(scheduleRefresh)
+      .catch(e => {
+        // Ответ не ушёл — оператор должен это увидеть, а не гадать
+        pushMsg(c, {dir:"sys", t:"Не отправлено: " + e.message, ts:Date.now()});
+        renderThread();
+      });
+    return;
+  }
+
+  pushMsg(c, {dir:"out", t:text, ts:Date.now(), st:"sent"});
+  inp.value = ""; inp.style.height = "auto";
+  $("#sendBtn").disabled = true;
+
+  if(c.status === "new"){
+    c.status = "open"; c.assignee = "Кирилл";
+    pushMsg(c, {dir:"sys", t:"Обращение взято в работу: Кирилл", ts:Date.now()});
+  }
+  renderThread(); renderList(); renderCard(); renderFilters();
+
+  const sent = c.msgs.filter(x => x.dir === "out").slice(-1)[0];
+  setTimeout(() => { sent.st = "delivered"; if(activeId === c.id) renderThread(); }, 900);
+  setTimeout(() => { sent.st = "read"; if(activeId === c.id) renderThread(); }, 2600);
+}
+
+const REPLIES = [
+  "Спасибо, помогло! Программа запустилась.",
+  "А счёт на юрлицо можете выставить?",
+  "Хорошо, жду. Когда примерно ответите?",
+  "Понял вас, попробую и отпишусь.",
+  "Отправил файл на почту, проверьте, пожалуйста."
+];
+
+function simulateIncoming(conv){
+  const pool = convs.filter(c => c.status !== "archived");
+  const c = conv || pool[Math.floor(Math.random()*pool.length)];
+  if(!c) return;
+  c.pres = {state:"in", since:Date.now(), typing:true};
+  typingIn = c.id;
+  if(activeId === c.id && section === "inbox") renderThread();
+  tickPresence();
+  setTimeout(() => {
+    typingIn = null;
+    c.pres.typing = false;
+    pushMsg(c, {dir:"in", t:REPLIES[Math.floor(Math.random()*REPLIES.length)], ts:Date.now()});
+    if(c.status === "waiting") c.status = "open";
+    if(activeId !== c.id) c.unread++;
+    renderList(); renderFilters();
+    if(activeId === c.id){ renderThread(); renderCard(); }
+  }, 1500);
+}
+
+function shufflePresence(){
+  const pool = convs.filter(c => c.status !== "archived" && c.status !== "closed");
+  if(!pool.length) return;
+  const c = pool[Math.floor(Math.random()*pool.length)];
+  const r = Math.random();
+  if(r < 0.34)      c.pres = {state:"in", since:Date.now(), typing:false};
+  else if(r < 0.67) c.pres = {state:"in", since:Date.now()-m(7), typing:true};
+  else              c.pres = {state:"left", since:Date.now()-m(9), typing:false};
+  tickPresence();
+}
+
+/* ================= окно выбора папки =================
+   То же дерево, что в разделе «Архив»: раздел сверху, его темы плитками.
+   Оператор узнаёт папку по месту и цвету, а не читает список. */
+function renderFolderList(){
+  const box = $("#folderList");
+  const q = $("#mSearch").value.trim();
+  box.textContent = "";
+  const archived = convs.filter(c => c.status === "archived");
+  // Клик по теме добавляет её к выбору, повторный — убирает.
+  // «Не определённая тема» — только сама по себе.
+  const pick = key => {
+    if(GBY[key]) return;
+    if(key === "undef") pendingFolders = pendingFolders.includes("undef") ? [] : ["undef"];
+    else {
+      pendingFolders = pendingFolders.filter(k => k !== "undef");
+      pendingFolders = pendingFolders.includes(key)
+        ? pendingFolders.filter(k => k !== key)
+        : pendingFolders.concat([key]);
+    }
+    $("#mOk").disabled = !pendingFolders.length;
+    renderFolderList();
+  };
+  box.append(folderTree(archived, pick, {compact:true, filter:q, selected:pendingFolders}));
+  box.append(el("div","fdivide","если ничего не подходит"));
+  box.append(undefTile(archived, pick, pendingFolders.includes("undef")));
+  const names = pendingFolders.map(k => FBY[k] ? FBY[k].n : k);
+  $("#mPicked").textContent = !names.length ? "Можно выбрать несколько папок"
+    : (names.length === 1 ? "Папка: " : "Папок: " + names.length + " — ") + names.join(", ");
+  $("#mPicked").title = names.join(", ");
+}
+
+function renderMoodList(){
+  const box = $("#moodList");
+  box.textContent = "";
+  MOODS.forEach(mo => {
+    const b = el("button","moodopt");
+    b.type = "button";
+    b.style.setProperty("--mc", mo.c);
+    b.dataset.mood = mo.k;
+    b.setAttribute("aria-pressed", String(pendingMood === mo.k));
+    b.title = mo.hint;
+    const t = el("div");
+    t.append(el("b",null,mo.n), el("span",null,mo.hint));
+    b.append(el("i","mo"), t);
+    b.onclick = () => { pendingMood = pendingMood === mo.k ? null : mo.k; renderMoodList(); };
+    box.append(b);
+  });
+}
+
+function openArchiveModal(){
+  const c = byId(activeId);
+  if(!c) return;
+  const cl = clientOf(c);
+  pendingMood = cl ? (cl.mood || null) : null;
+  renderMoodList();
+  pendingFolders = foldersOf(c).slice();
+  $("#mSub").textContent = c.status === "archived"
+    ? "Обращение уже в архиве. Отметьте другие папки, если тема определилась точнее."
+    : "«"+c.topic+"» уйдёт в архив. Отметьте все подходящие темы — можно несколько.";
+  $("#mSearch").value = "";
+  $("#mOk").disabled = !pendingFolders.length;
+  $("#mOk").textContent = c.status === "archived" ? "Переместить" : "Отправить в архив";
+  $("#archiveModal").hidden = false;
+  renderFolderList();
+  setTimeout(() => $("#mSearch").focus(), 30);
+}
+function closeArchiveModal(){
+  $("#archiveModal").hidden = true;
+  pendingFolders = [];
+  const c = byId(activeId);
+  if(c) $("#statusSel").value = c.status;
+}
+function confirmArchive(){
+  const c = byId(activeId);
+  if(!c || !pendingFolders.length) return;
+  const picked = pendingFolders.slice();
+
+  if(LIVE){
+    const mood = pendingMood || "";
+    api("/api/conversations/" + c.sid + "/archive",
+        {method:"POST", body:JSON.stringify({folders:picked, mood:mood})})
+      .then(() => { closeArchiveModal(); scheduleRefresh(); })
+      .catch(e => {
+        closeArchiveModal();
+        pushMsg(c, {dir:"sys", t:"Не удалось убрать в архив: " + e.message, ts:Date.now()});
+        renderThread();
+      });
+    return;
+  }
+  const was = c.status === "archived";
+  c.status = "archived"; c.folders = picked; c.folder = picked[0]; c.unread = 0;
+  const names = picked.map(k => "«" + FBY[k].n + "»").join(", ");
+  pushMsg(c, {dir:"sys", t:(was ? "Папки изменены → " : "Обращение отправлено в архив → " +
+                                  (picked.length > 1 ? "папки " : "папка ")) + names, ts:Date.now()});
+
+  // Пометка ставится человеку и остаётся с ним после закрытия обращения
+  const cl = clientOf(c);
+  if(cl && pendingMood !== (cl.mood || null)){
+    cl.mood = pendingMood || "";
+    cl.moodAt = pendingMood ? Date.now() : 0;
+    cl.moodBy = pendingMood ? "Кирилл" : "";
+    saveMoods();
+    pushMsg(c, {dir:"sys",
+      t: pendingMood ? "Клиент помечен: " + MBY[pendingMood].n.toLowerCase()
+                     : "Пометка о клиенте снята",
+      ts:Date.now()});
+  }
+
+  closeArchiveModal();
+  renderFilters(); renderList(); renderThread(); renderCard();
+  if(section === "archive") renderArchive();
+  if(section === "clients") renderClients();
+}
+
+/* ================= окно сценария анкеты ================= */
+function renderScript(){
+  const box = $("#scriptBox");
+  box.textContent = "";
+  let n = 0;
+  INTAKE_SCRIPT.forEach(s => {
+    const step = el("div","sstep" + (s.who === "client" ? " client" : ""));
+    step.append(el("span","snum", s.who === "client" ? "К" : String(++n)));
+    const bub = el("div","sbub", s.q);
+    if(s.b){
+      const row = el("div","sbtns");
+      s.b.forEach(t => row.append(el("span","sbtn", t)));
+      bub.append(row);
+    }
+    if(s.a){
+      const ans = el("div","ans");
+      ans.append(document.createTextNode("клиент: "), el("b",null,s.a));
+      bub.append(ans);
+    }
+    step.append(bub);
+    box.append(step);
+  });
+}
+
+/* ================= прикреплённый файл ================= */
+let pendingFile = null;
+
+function humanSize(n){
+  if(n < 1024) return n + " Б";
+  if(n < 1024*1024) return Math.round(n/1024) + " КБ";
+  return (n/1024/1024).toFixed(1).replace(".", ",") + " МБ";
+}
+
+function renderPending(){
+  const box = $("#pendingFile");
+  box.textContent = "";
+  if(!pendingFile){ box.hidden = true; return; }
+  box.hidden = false;
+
+  if(/^image\//.test(pendingFile.type)){
+    const img = document.createElement("img");
+    img.className = "thumb";
+    img.src = URL.createObjectURL(pendingFile);
+    img.onload = () => URL.revokeObjectURL(img.src);
+    box.append(img);
+  }
+  box.append(el("span","pn", pendingFile.name), el("span","ps", humanSize(pendingFile.size)));
+
+  const x = el("button","px","×");
+  x.type = "button";
+  x.title = "Убрать файл";
+  x.onclick = () => { pendingFile = null; $("#fileInput").value = ""; renderPending(); syncSend(); };
+  box.append(x);
+}
+
+function syncSend(){
+  const inp = $("#input");
+  $("#sendBtn").disabled = !inp.value.trim() && !pendingFile;
+  $("#sendBtn").textContent = pendingFile ? "Отправить" : "Ответить";
+}
+
+function sendFile(){
+  const c = byId(activeId);
+  if(!c || !pendingFile) return;
+  const caption = $("#input").value.trim();
+
+  if(!LIVE){
+    pushMsg(c, {dir:"out", ts:Date.now(), st:"sent", t:caption,
+                att:{n:pendingFile.name, s:humanSize(pendingFile.size), k:"ФАЙЛ",
+                     url:"", kind:/^image\//.test(pendingFile.type) ? "image" : "file"}});
+    pendingFile = null; $("#fileInput").value = ""; $("#input").value = "";
+    renderPending(); syncSend(); renderThread(); renderList();
+    return;
+  }
+
+  const form = new FormData();
+  form.append("file", pendingFile);
+  form.append("caption", caption);
+  $("#pendingFile").classList.add("sending");
+
+  fetch("/api/conversations/" + c.sid + "/attach", {method:"POST", body:form})
+    .then(async r => {
+      if(!r.ok){
+        let detail = "HTTP " + r.status;
+        try{ detail = (await r.json()).detail || detail; }catch(e){}
+        throw new Error(detail);
+      }
+      pendingFile = null;
+      $("#fileInput").value = "";
+      $("#input").value = "";
+      $("#input").style.height = "auto";
+      scheduleRefresh();
+    })
+    .catch(e => {
+      pushMsg(c, {dir:"sys", t:"Файл не отправлен: " + e.message, ts:Date.now()});
+      renderThread();
+    })
+    .finally(() => {
+      $("#pendingFile").classList.remove("sending");
+      renderPending(); syncSend();
+    });
+}
+
+/* ================= удаление обращения ================= */
+function openDeleteModal(){
+  const c = byId(activeId);
+  if(!c) return;
+
+  const box = $("#dBody");
+  box.textContent = "";
+  const row = (k, v) => {
+    const d = el("div","drow");
+    d.append(el("dt",null,k), el("dd",null,v));
+    box.append(d);
+  };
+  row("Клиент", c.name);
+  row("Тема", c.topic || "без темы");
+  row("Папки", foldersOf(c).map(k => FBY[k] ? FBY[k].n : k).join(", ") || "—");
+
+  const real = c.msgs.filter(m => !m.partial);
+  row("Сообщений", LIVE && !c.loaded ? "загружаю…" : String(real.length));
+  row("Вложений", String(real.filter(m => m.att).length));
+
+  $("#deleteModal").hidden = false;
+
+  // В живом режиме цифры берём у бэкенда — он считает по базе, а не по загруженному
+  if(LIVE){
+    api("/api/conversations/" + c.sid + "/summary")
+      .then(s => {
+        box.textContent = "";
+        row("Клиент", s.display_name);
+        row("Тема", s.topic || "без темы");
+        let sf = [];
+        try{ sf = JSON.parse(s.folders || "[]"); }catch(e){}
+        if(!sf.length && s.folder) sf = [s.folder];
+        row("Папки", sf.map(k => FBY[k] ? FBY[k].n : k).join(", ") || "—");
+        row("Сообщений", String(s.messages));
+        row("Вложений", String(s.files));
+      })
+      .catch(e => console.warn("сводка не получена:", e.message));
+  }
+}
+
+function closeDeleteModal(){ $("#deleteModal").hidden = true; }
+
+function confirmDelete(){
+  const c = byId(activeId);
+  if(!c) return;
+
+  if(!LIVE){
+    const i = convs.indexOf(c);
+    if(i >= 0) convs.splice(i, 1);
+    const cl = CBY[c.client];
+    if(cl) cl.convs = cl.convs.filter(id => id !== c.id);
+    activeId = convs.length ? convs[0].id : null;
+    closeDeleteModal();
+    renderFilters(); renderList(); renderThread(); renderCard();
+    if(section === "archive") renderArchive();
+    if(section === "clients") renderClients();
+    return;
+  }
+
+  api("/api/conversations/" + c.sid, {method:"DELETE"})
+    .then(() => {
+      activeId = null;
+      closeDeleteModal();
+      scheduleRefresh();
+      if(section === "inbox") setSection("archive");
+    })
+    .catch(e => {
+      closeDeleteModal();
+      pushMsg(c, {dir:"sys", t:"Не удалось удалить: " + e.message, ts:Date.now()});
+      renderThread();
+    });
+}
+
+/* ================= привязки ================= */
+const input = $("#input");
+input.addEventListener("input", () => {
+  syncSend();
+  input.style.height = "auto";
+  input.style.height = Math.min(input.scrollHeight, 150)+"px";
+});
+function submit(){ if(pendingFile) sendFile(); else send(); }
+input.addEventListener("keydown", e => { if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); submit(); } });
+$("#sendBtn").onclick = submit;
+
+$("#fileBtn").onclick = () => $("#fileInput").click();
+$("#fileInput").addEventListener("change", e => {
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  if(f.size > 20 * 1024 * 1024){
+    alert("Файл больше 20 МБ — столько мессенджер не примет.");
+    e.target.value = "";
+    return;
+  }
+  pendingFile = f;
+  renderPending(); syncSend(); input.focus();
+});
+
+$("#deleteBtn").onclick = openDeleteModal;
+$("#dClose").onclick = closeDeleteModal;
+$("#dCancel").onclick = closeDeleteModal;
+$("#dOk").onclick = confirmDelete;
+$("#deleteModal").addEventListener("click", e => { if(e.target.id === "deleteModal") closeDeleteModal(); });
+$("#q").addEventListener("input", e => { query = e.target.value.trim(); renderList(); });
+
+$("#statusSel").onchange = e => {
+  const c = byId(activeId);
+  if(!c) return;
+  if(e.target.value === "archived"){ openArchiveModal(); return; }
+  if(LIVE){
+    api("/api/conversations/" + c.sid, {method:"PATCH", body:JSON.stringify({status:e.target.value})})
+      .then(scheduleRefresh)
+      .catch(err => console.warn("статус не сохранился:", err.message));
+    return;
+  }
+  c.status = e.target.value;
+  c.folder = ""; c.folders = [];
+  pushMsg(c, {dir:"sys", t:"Статус изменён: "+STATUS_L[c.status], ts:Date.now()});
+  renderFilters(); renderList(); renderThread(); renderCard();
+};
+
+$("#archiveBtn").onclick = openArchiveModal;
+$("#mClose").onclick = closeArchiveModal;
+$("#mCancel").onclick = closeArchiveModal;
+$("#mOk").onclick = confirmArchive;
+$("#mSearch").addEventListener("input", renderFolderList);
+$("#archiveModal").addEventListener("click", e => { if(e.target.id === "archiveModal") closeArchiveModal(); });
+
+$("#navInbox").onclick = () => setSection("inbox");
+$("#navClients").onclick = () => { openClient = null; setSection("clients"); };
+$("#navArchive").onclick = () => { openFolder = null; setSection("archive"); };
+$("#cliQ").addEventListener("input", e => { cQuery = e.target.value.trim(); renderClients(); });
+$("#cliClear").onclick = () => { $("#cliQ").value = ""; cQuery = ""; renderClients(); $("#cliQ").focus(); };
+$("#navIntake").onclick = () => { renderScript(); $("#intakeModal").hidden = false; };
+$("#iClose").onclick = () => { $("#intakeModal").hidden = true; };
+$("#iOk").onclick = () => { $("#intakeModal").hidden = true; };
+$("#intakeModal").addEventListener("click", e => { if(e.target.id === "intakeModal") $("#intakeModal").hidden = true; });
+
+$("#aq").addEventListener("input", e => {
+  aQuery = e.target.value;
+  // Вопрос «сколько…» — это про цифры, а не про поиск обращения
+  if(aMode === "find" && ASK_RX.test(aQuery)){ setMode("ask"); return; }
+  if(aMode === "find") renderArchive();
+  else $("#aClear").hidden = !aQuery;
+});
+$("#aq").addEventListener("keydown", e => {
+  if(e.key === "Enter" && aMode === "ask"){ e.preventDefault(); runAsk(aQuery); }
+});
+$("#aClear").onclick = () => { $("#aq").value = ""; aQuery = ""; askState = null; renderArchive(); $("#aq").focus(); };
+$("#modeFind").onclick = () => { if(aMode !== "find"){ setMode("find"); $("#aq").focus(); } };
+$("#modeAsk").onclick = () => { if(aMode !== "ask"){ setMode("ask"); $("#aq").focus(); } };
+
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape"){
+    const modalOpen = !$("#archiveModal").hidden || !$("#intakeModal").hidden || !$("#deleteModal").hidden;
+    if(!modalOpen && $("#calBox").hidden && section === "inbox" && activeId &&
+       document.activeElement !== $("#input")) closeChat();
+    if(!$("#archiveModal").hidden) closeArchiveModal();
+    if(!$("#intakeModal").hidden) $("#intakeModal").hidden = true;
+    if(!$("#deleteModal").hidden) closeDeleteModal();
+    return;
+  }
+  if(!$("#archiveModal").hidden && e.key === "Enter" && pendingFolders.length &&
+     document.activeElement !== $("#mSearch")) confirmArchive();
+});
+
+$("#backBtn").onclick = closeChat;
+$("#cardBtn").onclick = () => {
+  const box = $("#inbox");
+  box.dataset.card = box.dataset.card === "open" ? "" : "open";
+};
+$("#simBtn").onclick = () => simulateIncoming(byId(activeId));
+
+const tplMenu = $("#tplMenu");
+TEMPLATES.forEach(t => {
+  const b = el("button");
+  b.type = "button";
+  b.append(el("b",null,t.t), document.createTextNode(t.v.slice(0,74)+"…"));
+  b.onclick = () => { input.value = t.v; tplMenu.hidden = true; input.dispatchEvent(new Event("input")); input.focus(); };
+  tplMenu.append(b);
+});
+$("#tplBtn").onclick = e => { e.stopPropagation(); tplMenu.hidden = !tplMenu.hidden; };
+document.addEventListener("click", e => { if(!tplMenu.hidden && !tplMenu.contains(e.target)) tplMenu.hidden = true; });
+
+/* ===== облик интерфейса ===== */
+const SKINS = [
+  {k:"aurora",  n:"Аврора",  d:"тёмное стекло и неон",        sw:"linear-gradient(140deg,#0b1426,#16233d 45%,#22c8f5)"},
+  {k:"dawn",    n:"Рассвет", d:"светлое стекло, тёплый свет", sw:"linear-gradient(140deg,#fff6ea,#f1ece4 45%,#00b7e8)"},
+  {k:"contour", n:"Контур",  d:"плотный тёмно-синий",         sw:"linear-gradient(140deg,#0e1929,#12233a 45%,#00b3e3)"}
+];
+
+function applySkin(k){
+  document.documentElement.setAttribute("data-skin", k);
+  store.set("skin", k);
+  renderSkinMenu();
+}
+function renderSkinMenu(){
+  const box = $("#skinMenu");
+  const cur = document.documentElement.getAttribute("data-skin") || "aurora";
+  box.textContent = "";
+  SKINS.forEach(s => {
+    const b = el("button","skinitem");
+    b.type = "button";
+    b.setAttribute("aria-pressed", String(s.k === cur));
+    const sw = el("span","swatch");
+    sw.style.background = s.sw;
+    const t = el("div");
+    t.append(el("b",null,s.n), el("span",null,s.d));
+    b.append(sw, t);
+    b.onclick = ev => { ev.stopPropagation(); applySkin(s.k); };
+    box.append(b);
+  });
+}
+$("#themeBtn").onclick = e => {
+  e.stopPropagation();
+  const box = $("#skinMenu");
+  box.hidden = !box.hidden;
+  if(!box.hidden){ closeCal(); renderSkinMenu(); }
+};
+document.addEventListener("click", e => {
+  const box = $("#skinMenu");
+  if(!box.hidden && !box.contains(e.target)) box.hidden = true;
+});
+/* Первый заход подстраивается под системную тему, дальше решает оператор */
+applySkin(store.get("skin", null) ||
+  (matchMedia("(prefers-color-scheme: light)").matches ? "dawn" : "aurora"));
+$("#skinMenu").hidden = true;
+
+/* ================= живой режим =================
+   Если рядом отвечает бэкенд, демо-данные заменяются настоящими и все
+   действия уходят по HTTP. Если бэкенда нет — страница остаётся
+   самодостаточным демо, как и была. */
+
+let LIVE = false;
+let stream = null;
+let refreshTimer = null;
+
+const PROV_IN  = p => (p === "telegram" ? "tg" : p === "max" ? "max" : p);
+const PROV_OUT = p => (p === "tg" ? "telegram" : p);
+
+async function api(path, options){
+  const r = await fetch(path, Object.assign({headers:{"Content-Type":"application/json"}}, options));
+  if(!r.ok){
+    let detail = "HTTP " + r.status;
+    try{ detail = (await r.json()).detail || detail; }catch(e){}
+    throw new Error(detail);
+  }
+  return r.status === 204 ? null : r.json();
+}
+
+function mapConv(r){
+  const hasIntake = r.license || r.org || r.phone || r.intake_status !== "none";
+  return {
+    id: "s" + r.id,
+    sid: r.id,
+    contactId: r.contact_id,
+    client: "k" + r.contact_id,
+    provider: PROV_IN(r.provider),
+    ext: r.external_chat_id,
+    name: r.display_name || "Без имени",
+    un: r.username || "",
+    intake: hasIntake ? {
+      key: r.license || "—", org: r.org || "—",
+      fio: r.display_name || "—", phone: r.phone || "—",
+      at: r.created_at || r.last_ts,
+      status: r.intake_status || "done"
+    } : null,
+    product: r.product || "—", ver: "—", support: "—",
+    topic: r.topic || "Без темы",
+    status: r.status,
+    assignee: r.assignee || "—",
+    folder: r.folder || "",
+    folders: r.folders || (r.folder ? [r.folder] : []),
+    archivedAt: r.archived_at || 0,
+    tags: r.tags || [],
+    note: r.note || "",
+    unread: r.unread || 0,
+    since: Date.now() - (r.created_at || Date.now()),
+    pres: {
+      state: r.presence_state || "left",
+      since: r.presence_since || 0,
+      typing: (Date.now() - (r.typing_at || 0)) < 60000
+    },
+    color: AVA[(r.contact_id || 0) % AVA.length],
+    lastTs: r.last_ts || Date.now(),
+    seq: 0,
+    loaded: false,
+    // Заглушка под превью: настоящие сообщения подтянем при открытии
+    msgs: [{id:"p", dir: r.preview_dir === "out" ? "out" : "in",
+            t: r.preview || "", ts: r.last_ts || Date.now(), st:"read", partial:true}]
+  };
+}
+
+function mapClient(r){
+  return {
+    id: "k" + r.id,
+    cid: r.id,
+    name: r.display_name || "Без имени",
+    un: r.username || "",
+    provider: PROV_IN(r.provider),
+    ext: r.external_user_id,
+    color: AVA[r.id % AVA.length],
+    org: r.org || "—", lic: r.license || "—", phone: r.phone || "—",
+    product: r.product || "—", ver: "—", support: "—",
+    since: Date.now() - (r.created_at || Date.now()),
+    mood: r.mood || "", moodAt: r.mood_at || 0, moodBy: r.mood_by || "",
+    lastTs: r.last_ts || 0,
+    intakeDone: !!r.intake_done,
+    convs: []
+  };
+}
+
+function mapMsg(r){
+  const a = (r.attachments || [])[0];
+  return {
+    id: "m" + r.id,
+    dir: r.direction,
+    t: r.text || "",
+    ts: r.ts,
+    st: r.delivery || "sent",
+    att: a ? {n: a.name || "файл",
+              s: a.size ? Math.round(a.size/1024) + " КБ" : "",
+              k: (a.kind || "файл").slice(0,4).toUpperCase(),
+              url: a.url || "",
+              kind: a.kind || ""} : null
+  };
+}
+
+async function loadAll(){
+  const [active, archived, raw] = await Promise.all([
+    api("/api/conversations?status=all"),
+    api("/api/conversations?status=archived"),
+    api("/api/clients")
+  ]);
+
+  const keepOpen = activeId;
+  convs.length = 0;
+  active.concat(archived).forEach(r => convs.push(mapConv(r)));
+
+  clients.length = 0;
+  Object.keys(CBY).forEach(k => delete CBY[k]);
+  raw.forEach(r => {
+    const cl = mapClient(r);
+    CBY[cl.id] = cl;
+    clients.push(cl);
+  });
+  convs.forEach(c => { if(CBY[c.client]) CBY[c.client].convs.push(c.id); });
+
+  if(!byId(keepOpen)) activeId = (!chatClosed && convs.length) ? convs[0].id : null;
+}
+
+async function loadMessages(c){
+  if(!LIVE || !c || c.loaded) return;
+  const rows = await api("/api/conversations/" + c.sid + "/messages");
+  c.msgs = rows.map(mapMsg);
+  c.seq = c.msgs.length;
+  c.loaded = true;
+}
+
+/* Бэкенд сам толкает изменения — перезапрашиваем не чаще раза в полсекунды */
+function scheduleRefresh(){
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(async () => {
+    try{
+      const open = byId(activeId);
+      if(open) open.loaded = false;
+      await loadAll();
+      const still = byId(activeId);
+      if(still) await loadMessages(still);
+      renderFilters(); renderList(); renderThread(); renderCard();
+      if(section === "archive") renderArchive();
+      if(section === "clients") renderClients();
+    }catch(e){ console.warn("обновление не прошло:", e.message); }
+  }, 500);
+}
+
+function openStream(){
+  try{
+    stream = new EventSource("/api/stream");
+    ["message","conversation","client","presence"].forEach(kind => {
+      stream.addEventListener(kind, scheduleRefresh);
+    });
+    // EventSource переподключается сам; после обрыва перечитываем всё —
+    // пока связи не было, события могли пройти мимо
+    let broken = false;
+    stream.onerror = () => { broken = true; };
+    stream.onopen = () => { if(broken){ broken = false; scheduleRefresh(); } };
+  }catch(e){ console.warn("SSE недоступен:", e); }
+}
+
+function markLive(channels){
+  const tag = $("#demoTag");
+  const on = Object.keys(channels || {}).filter(k => channels[k]);
+  tag.textContent = on.length ? on.map(k => k === "telegram" ? "Telegram" : "MAX").join(" · ") : "нет каналов";
+  tag.className = "badge " + (on.length ? "open" : "waiting");
+  tag.title = on.length
+    ? "Канал подключён: сообщения идут из мессенджера"
+    : "Бэкенд работает, но токен бота не прописан";
+}
+
+async function liveBoot(){
+  // Страницу отдал сервер — значит, бэкенд точно есть: не сдаёмся после
+  // первой неудачи (туннель бывает медленным), а пробуем снова
+  const served = !!window.TP_SERVER;
+  let health = null;
+  for(let attempt = 0; ; attempt++){
+    try{
+      health = await api("/api/health");
+      break;
+    }catch(e){
+      if(!served) return false;   // бэкенда нет — остаёмся демо
+      booting = "Нет связи с сервером, пробую снова…";
+      renderList();
+      await new Promise(r => setTimeout(r, Math.min(1000 * (attempt + 1), 5000)));
+    }
+  }
+  if(!health || !health.ok) return false;
+
+  LIVE = true;
+  await loadAll();
+  booting = "";
+  const open = byId(activeId);
+  if(open) await loadMessages(open);
+  markLive(health.channels);
+  openStream();
+  renderFilters(); renderList(); renderThread(); renderCard();
+  if(section === "archive") renderArchive();
+  if(section === "clients") renderClients();
+
+  // Страховка на случай, если туннель глотает поток событий:
+  // раз в 20 секунд сверяемся с сервером сами
+  setInterval(() => { if(!document.hidden) scheduleRefresh(); }, 20000);
+  return true;
+}
+
+/* ================= старт ================= */
+if(innerWidth > 820) $("#inbox").dataset.view = "thread";
+
+// Страницу отдал сервер — демо-обращения не показываем ни на миг,
+// иначе оператор путает их с настоящими, пока грузится база
+if(window.TP_SERVER){
+  convs.length = 0;
+  clients.length = 0;
+  Object.keys(CBY).forEach(k => delete CBY[k]);
+  activeId = null;
+  $("#demoTag").textContent = "подключаюсь…";
+}
+renderFilters(); renderList(); renderThread(); renderCard();
+
+setInterval(tickPresence, 5000);
+
+liveBoot().then(live => {
+  if(live) return;
+  // Бэкенда рядом нет — страница работает как самостоятельное демо
+  $("#simBtn").hidden = false;
+  setInterval(shufflePresence, 11000);
+  setInterval(() => { if(!document.hidden) simulateIncoming(); }, 45000);
+});
+
+})();
+</script>
+
+</body>
+</html>

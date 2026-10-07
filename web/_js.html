@@ -1,0 +1,2356 @@
+<script>
+(function(){
+"use strict";
+
+/* ================= данные ================= */
+const NOW = Date.now();
+const m = n => n*60000, h = n => n*3600000, d = n => n*86400000;
+const FIVE = 5*60000;
+
+const TEMPLATES = [
+  {t:"Приветствие", v:"Здравствуйте! Техподдержка Турбосметчика. Вижу вашу анкету, сейчас разберёмся."},
+  {t:"Ключ не определяется", v:"Проверьте, пожалуйста, три вещи: горит ли светодиод на ключе, установлен ли драйвер Sentinel HASP и запущена ли служба «Sentinel LDK License Manager» в services.msc. Чаще всего после обновления Windows служба остаётся остановленной."},
+  {t:"Стоимость и счёт", v:"Турбосметчик СМР — от 30 000 ₽ за рабочее место, со второго места действует скидка 30%. Пришлите реквизиты и количество мест, счёт выставим в течение дня."},
+  {t:"Обновления базы", v:"Актуальная сборка и дополнения ФСНБ публикуются в личном кабинете, раздел «Обновления». Доступ входит в годовую подписку на сопровождение."},
+  {t:"Передал специалисту", v:"Спасибо за обращение! Передал вопрос профильному специалисту, вернусь с ответом в течение рабочего дня."}
+];
+
+/* Архив: разделы-родители и темы внутри. Тот же список, что в
+   backend/app/folders.py — обращение кладётся в тему, раздел нужен
+   для обзора. Цвет темы берётся от раздела: семья узнаётся глазом. */
+const GROUPS = [
+  {k:"g_setup", n:"Установка и подключение", hint:"Поставить, скачать, подключиться", c:"#2f7fc1", kids:[
+    ["install","Установка"], ["download","Скачать"], ["driver","Драйвер"], ["remote","Удалённое подключение"]]},
+  {k:"g_errors", n:"Ошибки и сбои", hint:"Программа падает или ведёт себя странно", c:"#d0524a", kids:[
+    ["err_turbo","Ошибка в Турбосметчике"], ["err_build","Ошибка в сборке"]]},
+  {k:"g_work", n:"Работа в программе", hint:"Функции, документы, печать", c:"#7b5cd6", kids:[
+    ["functions","Функции программы"], ["docprops","Свойства документа"],
+    ["formulas","Формулы и итоговые начисления"], ["correction","Поправка"],
+    ["print","Настройки печати"], ["objsmeta","Объектный сметчик"], ["explnote","Пояснительная записка"]]},
+  {k:"g_norms", n:"Нормативные базы", hint:"Базы, дополнения, индексы", c:"#c88a12", kids:[
+    ["base_q","Вопрос по базе"], ["addon","Выбрать дополнение"], ["snb","Преобразовать СНБ"],
+    ["indexes","Вопрос по индексам"], ["techpart","Тех часть"], ["pir","ПИР"], ["rzd","РЖД"]]},
+  {k:"g_exchange", n:"Обмен и форматы", hint:"GGE/MGE, АРПС, импорт", c:"#12907f", kids:[
+    ["gge","GGE/MGE импорт и экспорт"], ["gge_exp","Вопрос mge/gge от эксперта"], ["arps","АРПС"],
+    ["vor","ВОР"], ["pricelist","Импорт прайс-листа"]]},
+  {k:"g_method", n:"Методика и консультации", hint:"Как правильно посчитать", c:"#3f9a52", kids:[
+    ["method","Вопрос по методике"], ["consult","Консультация"], ["market","Конъюнктурный анализ"],
+    ["nmck","НМЦК, смета контракта"], ["finderr","Поиск ошибки в смете"]]}
+];
+const UNDEF = {k:"undef", n:"Не определённая тема", hint:"Разберём позже и разложим по папкам", c:"#78716c"};
+const FBY = {}, GBY = {};
+GROUPS.forEach(g => {
+  GBY[g.k] = g;
+  g.kids = g.kids.map(p => { const f = {k:p[0], n:p[1], c:g.c, g:g}; FBY[f.k] = f; return f; });
+});
+FBY.undef = UNDEF;
+
+/* Пометки о манере клиента. Ставятся человеку, а не обращению, поэтому
+   живут в базе клиентов и всплывают при каждом следующем разговоре.
+   Порядок — от самого лёгкого собеседника к самому тяжёлому. */
+const MOODS = [
+  {k:"calm",     g:"✓", c:"#1fb37a", n:"Спокойный",
+   hint:"Обычный разговор, особой подготовки не нужно"},
+  {k:"talker",   g:"»", c:"#2ba3e3", n:"Разговорчивый",
+   hint:"Любит поболтать — закладывайте время с запасом"},
+  {k:"slow",     g:"?", c:"#7a63e8", n:"Долгое объяснение",
+   hint:"Схватывает тяжело: разбирайте по шагам, не торопите"},
+  {k:"arguer",   g:"!", c:"#e3a41c", n:"Спорщик",
+   hint:"Слушает, но возражает почти на каждый пункт — держитесь фактов"},
+  {k:"touchy",   g:"~", c:"#f2703a", n:"Исполнительный, но резкий",
+   hint:"Делает как сказали, но может вспылить на мелочи"},
+  {k:"negative", g:"×", c:"#e23b2d", n:"Негативный",
+   hint:"Настроен недоброжелательно — только факты, без обещаний"}
+];
+const MBY = {}; MOODS.forEach(x => { MBY[x.k] = x; });
+
+/* Сценарий анкеты — тот же порядок, что в боте на бэкенде.
+   Вопрос клиента уходит специалисту сразу, анкета идёт параллельно. */
+const INTAKE_SCRIPT = [
+  {who:"client", q:"Не могу выгрузить смету в АРПС, пишет «неверная структура раздела»"},
+  {q:"Вопрос получили — специалист уже видит его и скоро ответит.\n\nПока ждёте: 4 коротких вопроса, чтобы специалист сразу поднял вашу лицензию и не переспрашивал. Любой можно пропустить.\n\nНомер ключа или лицензии?",
+   b:["Нет ключа","Пропустить","Не сейчас"], a:"14782"},
+  {q:"Название организации? Для ИП — фамилия.", b:["Частное лицо","Пропустить","Не сейчас"], a:"ООО «ПроектСтрой»"},
+  {q:"Телефон — на случай, если в мессенджере не достучимся.", b:["📱 Поделиться номером","Пропустить"], a:"📱 номер из Telegram"},
+  {q:"Как к вам обращаться? Имя и фамилия.", b:["Да, Ирина Кузнецова","Пропустить"], a:"Да, Ирина Кузнецова"},
+  {q:"Спасибо! Всё передал специалисту — он уже в курсе."}
+];
+
+const AVA = ["#1a5fa8","#3d5a80","#2f6f76","#4a4e7c","#0090c6","#3e5d73","#5a4a76","#26607a","#8a5a3c","#5c6b3f","#7a4a5e"];
+
+const SEED = [
+  {id:"c1", provider:"max", ext:"98314022", name:"Ирина Кузнецова", un:"@ikuznetsova",
+   intake:{key:"ТС-14782", org:"ООО «ПроектСтрой»", fio:"Ирина Кузнецова", phone:"+7 916 204-77-10", at:NOW-m(44)},
+   product:"Турбосметчик СМР", ver:"11.4.2", support:"до 12.03.2027",
+   topic:"Не видит ключ", status:"new", assignee:"—", folder:"",
+   tags:["лицензия","HASP"], note:"", unread:2, since:d(420),
+   pres:{state:"in", since:NOW-m(1), typing:false},
+   msgs:[
+     {dir:"in", t:"Здравствуйте! Переустановили Windows, теперь Турбосметчик пишет «Ключ защиты не найден». Ключ в USB, всё как было.", ts:NOW-m(41)},
+     {dir:"in", t:"Вот скриншот ошибки", ts:NOW-m(39), att:{n:"ошибка_ключа.png", s:"318 КБ", k:"PNG"}},
+     {dir:"in", t:"Работа стоит, сдаём смету заказчику в четверг. Поможете сегодня?", ts:NOW-m(12)}
+   ]},
+
+  {id:"c2", provider:"tg", ext:"449102873", name:"Сергей Плотников", un:"@s_plotnikov",
+   intake:{key:"ТС-09341", org:"ИП Плотников С. В.", fio:"Сергей Плотников", phone:"+7 903 771-05-62", at:NOW-d(2)-h(3)-m(4)},
+   product:"Турбосметчик СМР", ver:"11.3.8", support:"до 01.11.2026",
+   topic:"Обновление ФСНБ", status:"open", assignee:"Кирилл", folder:"",
+   tags:["обновления","ФСНБ"], note:"Работает по госконтрактам, обновления нужны день в день.", unread:0, since:d(700),
+   pres:{state:"in", since:NOW-m(13), typing:true},
+   msgs:[
+     {dir:"in", t:"Добрый день. Когда будет дополнение 15 к ФСНБ-2022? Заказчик уже требует считать по нему.", ts:NOW-d(2)-h(3)},
+     {dir:"out", t:"Здравствуйте, Сергей! Дополнение 15 вышло в Минстрое 8 сентября, мы выложили его в личный кабинет вчера вечером — раздел «Обновления», файл датирован 20.09.", ts:NOW-d(2)-h(2)-m(41), st:"read"},
+     {dir:"in", t:"Вижу файл, но при установке пишет «несовместимая версия программы»", ts:NOW-d(2)-h(2)-m(12)},
+     {dir:"out", t:"Так и есть: дополнение 15 требует сборку 11.4 и выше, у вас 11.3.8. Сначала поставьте обновление программы из того же раздела, потом базу — порядок важен, иначе индексы не подтянутся.", ts:NOW-d(2)-h(1)-m(50), st:"read"},
+     {dir:"sys", t:"Обращение передано специалисту: Кирилл", ts:NOW-d(2)-h(1)-m(45)},
+     {dir:"in", t:"Обновил программу, база встала. А старые сметы по дополнению 13 не поедут?", ts:NOW-h(4)-m(20)},
+     {dir:"out", t:"Нет, ранее составленные сметы хранят свою редакцию базы и пересчитываются только по вашей команде. Проверить можно в свойствах сметы — там указана редакция ФСНБ, по которой она собрана.", ts:NOW-h(3)-m(55), st:"delivered"},
+     {dir:"in", t:"Всё, разобрался. Спасибо!", ts:NOW-h(1)-m(8)}
+   ]},
+
+  {id:"c3", provider:"tg", ext:"518830224", name:"Анна Мельник", un:"@anna_melnik",
+   intake:{key:"нет ключа", org:"АО «Мытищинский ДСК»", fio:"Анна Мельник", phone:"+7 926 118-43-90", at:NOW-d(1)-h(6)-m(3)},
+   product:"—", ver:"—", support:"нет договора",
+   topic:"Второе рабочее место", status:"waiting", assignee:"Кирилл", folder:"",
+   tags:["оплата","юрлицо"], note:"Нужен счёт на 3 места. Тендерный отдел просит КП с печатью.", unread:0, since:d(9),
+   pres:{state:"left", since:NOW-h(3)-m(20), typing:false},
+   msgs:[
+     {dir:"in", t:"Здравствуйте! Сколько стоит Турбосметчик на три рабочих места и делаете ли сетевую версию?", ts:NOW-d(1)-h(6)},
+     {dir:"out", t:"Здравствуйте, Анна! Первое место — 30 000 ₽, второе и третье со скидкой 30%, итого 72 000 ₽. Сетевой ключ на 3 места — 78 000 ₽, зато лицензии не привязаны к конкретным компьютерам и выдаются по очереди.", ts:NOW-d(1)-h(5)-m(40), st:"read"},
+     {dir:"in", t:"А чем сетевая удобнее, если люди сидят в одном офисе?", ts:NOW-d(1)-h(5)-m(10)},
+     {dir:"out", t:"Если состав сметчиков не меняется — выгоднее обычные ключи. Сетевая окупается, когда людей больше, чем лицензий, или кто-то работает удалённо: ключ стоит на сервере, а подключаются по мере надобности.", ts:NOW-d(1)-h(4)-m(55), st:"read"},
+     {dir:"out", t:"Коммерческое предложение с печатью — во вложении, действует 30 дней.", ts:NOW-d(1)-h(4)-m(50), st:"read", att:{n:"КП_Мытищинский_ДСК.pdf", s:"412 КБ", k:"PDF"}},
+     {dir:"in", t:"Спасибо, передам в тендерный отдел и вернусь", ts:NOW-d(1)-h(4)-m(2)}
+   ]},
+
+  {id:"c4", provider:"max", ext:"77410265", name:"Дмитрий Рогов", un:"@d_rogov",
+   intake:{key:"ТС-11205", org:"ООО «СтройИнвест»", fio:"Дмитрий Рогов", phone:"+7 495 640-12-08", at:NOW-d(1)-h(2)-m(6)},
+   product:"Строительный эксперт", ver:"11.4.2", support:"до 30.09.2026",
+   topic:"Выгрузка в АРПС", status:"open", assignee:"Кирилл", folder:"",
+   tags:["АРПС","обмен"], note:"Сопровождение заканчивается через неделю — предложить продление.", unread:1, since:d(310),
+   pres:{state:"in", since:NOW-m(9), typing:false},
+   msgs:[
+     {dir:"in", t:"Добрый день. Заказчик принимает сметы только в АРПС 1.10, а его экспертиза ругается на наш файл: «неверная структура раздела».", ts:NOW-d(1)-h(2)},
+     {dir:"out", t:"Здравствуйте, Дмитрий! Такое обычно бывает, когда в смете есть пользовательские расценки без кода. При выгрузке в АРПС им нужно присвоить код вида «ПР-1», иначе раздел уходит пустым. Пришлите файл сметы, посмотрю точное место.", ts:NOW-d(1)-h(1)-m(30), st:"read"},
+     {dir:"in", t:"Отправляю. Там три авторские расценки по демонтажу.", ts:NOW-m(34), att:{n:"смета_корпус_2.xml", s:"1,1 МБ", k:"XML"}}
+   ]},
+
+  {id:"c5", provider:"tg", ext:"330157744", name:"Марина Белова", un:"@mbelova",
+   intake:{key:"ТС-15980", org:"ООО «Ремстройсервис»", fio:"Марина Белова", phone:"+7 915 883-21-44", at:NOW-h(2)-m(41)},
+   product:"Турбосметчик СМР", ver:"11.4.2", support:"до 18.06.2027",
+   topic:"Обучение сметчика", status:"new", assignee:"—", folder:"",
+   tags:["обучение"], note:"", unread:1, since:d(64),
+   pres:{state:"in", since:NOW-m(3), typing:false},
+   msgs:[
+     {dir:"in", t:"Здравствуйте, взяли нового сметчика, раньше работал в другой программе. Есть у вас обучение или хотя бы вебинары по вашей?", ts:NOW-h(2)-m(38)}
+   ]},
+
+  {id:"c6", provider:"tg", ext:"260044918", name:"Оксана Данилова", un:"@oks_danilova",
+   intake:{key:"ТС-13044", org:"ИП Данилова О. А.", fio:"Оксана Данилова", phone:"+7 977 302-66-19", at:NOW-d(3)-h(5)-m(2)},
+   product:"Турбосметчик ПИР", ver:"11.4.0", support:"до 05.02.2027",
+   topic:"Перенос лицензии", status:"waiting", assignee:"Кирилл", folder:"",
+   tags:["лицензия"], note:"Старый ноутбук сгорел, ключ уцелел.", unread:0, since:d(190),
+   pres:{state:"left", since:NOW-d(1), typing:false},
+   msgs:[
+     {dir:"in", t:"Сгорел ноутбук, купила новый. Как перенести программу, чтобы не слетела лицензия?", ts:NOW-d(3)-h(5)},
+     {dir:"out", t:"Лицензия живёт в ключе, а не в компьютере, так что переносить её не нужно. На новом ноутбуке: установить программу с сайта, поставить драйвер ключа, вставить ключ — и всё заработает.", ts:NOW-d(3)-h(4)-m(20), st:"read"},
+     {dir:"in", t:"А сметы? Они на старом диске остались, диск живой.", ts:NOW-d(3)-h(3)-m(50)},
+     {dir:"out", t:"Скопируйте папку базы данных целиком — по умолчанию это C:\\TurboSmeta\\Base. После установки укажите путь к ней в настройках, и все ваши объекты откроются вместе с историей расчётов.", ts:NOW-d(3)-h(3)-m(30), st:"read"},
+     {dir:"sys", t:"Установлено напоминание: 25 сентября, «Проверить, перенесла ли базу»", ts:NOW-d(3)-h(3)-m(28)}
+   ]},
+
+  {id:"c7", provider:"max", ext:"81200537", name:"Артём Воронцов", un:"@a_vorontsov",
+   intake:{key:"нет ключа", org:"частное лицо", fio:"Артём Воронцов", phone:"+7 999 145-70-33", at:NOW-m(56)},
+   product:"—", ver:"—", support:"нет договора",
+   topic:"Первичный вопрос о цене", status:"new", assignee:"—", folder:"",
+   tags:[], note:"", unread:1, since:m(56),
+   pres:{state:"in", since:NOW-m(22), typing:true},
+   msgs:[
+     {dir:"in", t:"Сколько стоит ваша программа для смет? И есть ли демоверсия посмотреть?", ts:NOW-m(52)}
+   ]},
+
+  /* ---------- архив ---------- */
+  {id:"c8", provider:"max", ext:"64039871", name:"Павел Исаев", un:"@pisaev",
+   intake:{key:"ТС-10662", org:"ООО «Люберецкий ремонт»", fio:"Павел Исаев", phone:"+7 926 771-09-25", at:NOW-d(6)-h(7)-m(3)},
+   product:"Турбосметчик СМР", ver:"11.4.2", support:"до 22.08.2027",
+   topic:"Накопительная ведомость из КС-2", status:"archived", assignee:"Кирилл", folder:"functions",
+   tags:["акты"], note:"", unread:0, since:d(540),
+   pres:{state:"left", since:NOW-d(5), typing:false},
+   msgs:[
+     {dir:"in", t:"Подскажите, как из акта КС-2 получить накопительную ведомость, чтобы не считать вручную остатки по месяцам?", ts:NOW-d(6)-h(7)},
+     {dir:"out", t:"В журнале актов выделите нужные КС-2 за период и нажмите «Накопительная ведомость» на панели документов. Программа сама подтянет объёмы с начала строительства и выведет остаток по каждой позиции.", ts:NOW-d(6)-h(6)-m(40), st:"read"},
+     {dir:"in", t:"Нашёл, работает. А в Excel её можно?", ts:NOW-d(5)-h(2)},
+     {dir:"out", t:"Да, кнопка «Экспорт → XLS» в окне ведомости. Формат сохраняет формулы, так что заказчик сможет проверить расчёт у себя.", ts:NOW-d(5)-h(1)-m(50), st:"read"},
+     {dir:"sys", t:"Обращение отправлено в архив → папка «Функции программы»", ts:NOW-d(5)-h(1)-m(45)}
+   ]},
+
+  {id:"c9", provider:"tg", ext:"771044920", name:"Галина Ершова", un:"@g_ershova",
+   intake:{key:"ТС-12890", org:"МКУ «Управление ЖКХ»", fio:"Галина Ершова", phone:"+7 905 660-18-02", at:NOW-d(9)-h(4)-m(5)},
+   product:"Турбосметчик СМР", ver:"11.4.2", support:"до 14.12.2026",
+   topic:"ТСН Московской области не видны в списке баз", status:"archived", assignee:"Кирилл", folder:"base_q",
+   tags:["ТСН"], note:"", unread:0, since:d(260),
+   pres:{state:"left", since:NOW-d(8), typing:false},
+   msgs:[
+     {dir:"in", t:"Нам нужно считать по ТСН Московской области, а в списке баз их не вижу. Они у вас есть?", ts:NOW-d(9)-h(4)},
+     {dir:"out", t:"Есть, но территориальные нормативы подключаются отдельным модулем к основной поставке. В личном кабинете он появится в списке доступных баз после активации — отправил заявку, к утру будет.", ts:NOW-d(9)-h(3)-m(30), st:"read"},
+     {dir:"in", t:"Появились, спасибо большое!", ts:NOW-d(8)-h(6)},
+     {dir:"sys", t:"Обращение отправлено в архив → папка «Вопрос по базе»", ts:NOW-d(8)-h(5)}
+   ]},
+
+  {id:"c10", provider:"tg", ext:"640028811", name:"Виктор Саблин", un:"@v_sablin",
+   intake:{key:"ТС-08117", org:"ООО «Дорстрой-9»", fio:"Виктор Саблин", phone:"+7 926 044-77-51", at:NOW-d(14)-h(3)},
+   product:"Турбосметчик СМР", ver:"11.4.1", support:"до 09.04.2027",
+   topic:"Ключ перестал определяться после обновления Windows", status:"archived", assignee:"Кирилл", folder:"driver",
+   tags:["HASP"], note:"", unread:0, since:d(880),
+   pres:{state:"left", since:NOW-d(13), typing:false},
+   msgs:[
+     {dir:"in", t:"После обновления Windows программа перестала видеть ключ защиты. Светодиод на ключе горит, но в программе ошибка.", ts:NOW-d(14)-h(3)},
+     {dir:"out", t:"Скорее всего, обновление остановило службу Sentinel LDK License Manager. Откройте services.msc, найдите её, запустите и поставьте тип «Автоматически», затем перезапустите Турбосметчик.", ts:NOW-d(14)-h(2)-m(30), st:"read"},
+     {dir:"in", t:"Точно, служба стояла. Запустил — ключ определился. Спасибо!", ts:NOW-d(13)-h(7)},
+     {dir:"sys", t:"Обращение отправлено в архив → папка «Драйвер»", ts:NOW-d(13)-h(6)}
+   ]},
+
+  {id:"c11", provider:"max", ext:"55201394", name:"Елена Тарасова", un:"@e_tarasova",
+   intake:{key:"ТС-14003", org:"ГБУ «Автодор МО»", fio:"Елена Тарасова", phone:"+7 916 712-30-44", at:NOW-d(21)-h(5)},
+   product:"Турбосметчик СМР", ver:"11.4.2", support:"до 28.01.2027",
+   topic:"Пересчёт сметы по ТСН после смены индексов", status:"archived", assignee:"Кирилл", folder:"indexes",
+   tags:["ТСН","индексы"], note:"", unread:0, since:d(430),
+   pres:{state:"left", since:NOW-d(20), typing:false},
+   msgs:[
+     {dir:"in", t:"Вышли новые индексы к ТСН, а смета считает по старым. Как пересчитать, не пересобирая заново?", ts:NOW-d(21)-h(5)},
+     {dir:"out", t:"В свойствах сметы смените редакцию индексов и нажмите «Пересчитать». Программа сохранит объёмы и расценки, поменяются только индексы — старую версию можно оставить копией через «Сохранить как».", ts:NOW-d(21)-h(4)-m(20), st:"read"},
+     {dir:"in", t:"Пересчиталось, суммы сошлись с проверкой заказчика. Спасибо!", ts:NOW-d(20)-h(6)},
+     {dir:"sys", t:"Обращение отправлено в архив → папка «Вопрос по индексам»", ts:NOW-d(20)-h(5)}
+   ]},
+
+  {id:"c12", provider:"tg", ext:"310772045", name:"Роман Гусев", un:"@r_gusev",
+   intake:{key:"ТС-11840", org:"ООО «СМУ-15»", fio:"Роман Гусев", phone:"+7 903 218-66-04", at:NOW-d(30)-h(2)},
+   product:"Турбосметчик СМР", ver:"11.4.0", support:"до 17.07.2027",
+   topic:"Заказчик не принимает выгрузку XML", status:"archived", assignee:"Кирилл", folder:"arps",
+   tags:["АРПС","XML"], note:"", unread:0, since:d(610),
+   pres:{state:"left", since:NOW-d(29), typing:false},
+   msgs:[
+     {dir:"in", t:"Выгрузили смету в XML, заказчик говорит, что его программа файл не открывает. В чём может быть дело?", ts:NOW-d(30)-h(2)},
+     {dir:"out", t:"Уточните у заказчика версию формата: АРПС 1.10 и формат Гранд-сметы — разные вещи. В окне выгрузки выберите нужный и поставьте кодировку Windows-1251, её ждёт большинство проверяющих программ.", ts:NOW-d(30)-h(1)-m(25), st:"read"},
+     {dir:"in", t:"Была кодировка UTF-8. Поменяли, файл открылся.", ts:NOW-d(29)-h(4)},
+     {dir:"sys", t:"Обращение отправлено в архив → папка «АРПС»", ts:NOW-d(29)-h(3)}
+   ]},
+
+  {id:"c13", provider:"max", ext:"98110277", name:"Надежда Кротова", un:"@n_krotova",
+   intake:{key:"нет ключа", org:"частное лицо", fio:"Надежда Кротова", phone:"+7 999 801-22-16", at:NOW-d(40)-h(6)},
+   product:"—", ver:"—", support:"нет договора",
+   topic:"Вопрос не по программе", status:"archived", assignee:"Кирилл", folder:"undef",
+   tags:[], note:"Спрашивала про нормативы, к программе отношения не имеет.", unread:0, since:d(40),
+   pres:{state:"left", since:NOW-d(39), typing:false},
+   msgs:[
+     {dir:"in", t:"Подскажите, а где вообще почитать про изменения в ценообразовании с нового года? Не по программе вопрос, просто вы в теме.", ts:NOW-d(40)-h(6)},
+     {dir:"out", t:"Смотрите письма Минстроя на официальном сайте и раздел новостей у нас — мы кратко пересказываем изменения. Отдельной методички, к сожалению, не ведём.", ts:NOW-d(40)-h(5)-m(10), st:"read"},
+     {dir:"sys", t:"Обращение отправлено в архив → папка «Не определённая тема»", ts:NOW-d(39)-h(2)}
+   ]}
+];
+
+const FILTERS = [
+  {k:"all",     l:"Все"},
+  {k:"new",     l:"Новые"},
+  {k:"open",    l:"В работе"},
+  {k:"waiting", l:"Ждут клиента"},
+  {k:"closed",  l:"Закрытые"}
+];
+const STATUS_L = {new:"Новый", open:"В работе", waiting:"Ждёт клиента", closed:"Закрыт", archived:"В архиве"};
+const PROVIDER_L = {tg:"Telegram", max:"MAX"};
+
+/* ================= состояние ================= */
+let convs = SEED.map((c,i) => {
+  let n = 0;
+  c.msgs = c.msgs.map(x => Object.assign({id:c.id+"-"+(++n)}, x));
+  return Object.assign({color:AVA[i%AVA.length], seq:n, folders:c.folder ? [c.folder] : []}, c);
+});
+let activeId = "c1";
+let filter = "all";
+let query = "";
+let typingIn = null;
+let pendingFolders = [];    // обращение можно положить сразу в несколько папок
+let section = "inbox";
+let openFolder = null;
+let aQuery = "";
+let openClient = null;
+let cQuery = "";
+let pendingMood = null;
+let chatClosed = false;      // оператор сам свернул чат — не открывать первый заново
+let booting = window.TP_SERVER ? "Загружаю обращения…" : "";
+
+const $ = s => document.querySelector(s);
+const el = (tag, cls, txt) => { const e = document.createElement(tag); if(cls) e.className = cls; if(txt!=null) e.textContent = txt; return e; };
+const byId = id => convs.find(c => c.id === id);
+const store = {
+  get(k,dflt){ try{ const v = localStorage.getItem("tp:"+k); return v==null?dflt:JSON.parse(v); }catch(e){ return dflt; } },
+  set(k,v){ try{ localStorage.setItem("tp:"+k, JSON.stringify(v)); }catch(e){} }
+};
+
+/* ================= база клиентов =================
+   Клиент — это человек, а не обращение: у одного за годы накапливается
+   несколько вопросов. Склеиваем по мессенджеру и id внутри него —
+   ровно то, что приходит в каждом апдейте. */
+const clients = [];
+const CBY = {};
+convs.forEach(c => {
+  const key = c.provider + ":" + c.ext;
+  let cl = CBY[key];
+  if(!cl){
+    const ik = c.intake || {};
+    cl = {
+      id:key, name:c.name, un:c.un, provider:c.provider, ext:c.ext, color:c.color,
+      org:ik.org || "—", lic:ik.key || "—", phone:ik.phone || "—",
+      product:c.product, ver:c.ver, support:c.support, since:c.since,
+      mood:"", moodAt:0, moodBy:"", convs:[]
+    };
+    CBY[key] = cl;
+    clients.push(cl);
+  }
+  cl.convs.push(c.id);
+  c.client = key;
+});
+const clientOf = c => CBY[c.client];
+
+/* Часть базы уже размечена — иначе не видно, ради чего это затевалось */
+[["tg:449102873","talker"], ["tg:518830224","slow"], ["max:77410265","arguer"],
+ ["tg:260044918","touchy"], ["max:81200537","negative"], ["max:64039871","calm"],
+ ["tg:640028811","calm"],   ["tg:310772045","arguer"]].forEach(pair => {
+  const cl = CBY[pair[0]];
+  if(cl){ cl.mood = pair[1]; cl.moodAt = NOW - d(3); cl.moodBy = "Кирилл"; }
+});
+
+/* Выбор оператора переживает перезагрузку страницы */
+const savedMoods = store.get("moods", {});
+Object.keys(savedMoods).forEach(id => { if(CBY[id]) Object.assign(CBY[id], savedMoods[id]); });
+function saveMoods(){
+  const out = {};
+  clients.forEach(cl => {
+    if(cl.mood) out[cl.id] = {mood:cl.mood, moodAt:cl.moodAt, moodBy:cl.moodBy};
+  });
+  store.set("moods", out);
+}
+
+function moodChip(mood){
+  const mo = MBY[mood];
+  if(!mo) return null;
+  const s = el("span","moodchip");
+  s.style.setProperty("--mc", mo.c);
+  s.dataset.mood = mo.k;
+  s.append(el("i","mo"), document.createTextNode(mo.n));
+  s.title = mo.hint;
+  return s;
+}
+function moodBar(cl){
+  const mo = MBY[cl.mood];
+  if(!mo) return null;
+  const box = el("div","moodbar");
+  box.style.setProperty("--mc", mo.c);
+  box.dataset.mood = mo.k;
+  box.append(el("span","mi mo", mo.g));
+  const t = el("div","mt");
+  t.append(el("b",null,"Клиент: " + mo.n.toLowerCase()), el("span",null,mo.hint));
+  if(cl.moodAt) t.append(el("div","mw","пометил " + cl.moodBy + " · " + dateShort(cl.moodAt)));
+  box.append(t);
+  return box;
+}
+
+/* ================= формат ================= */
+const MONTHS = ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
+const pad = n => String(n).padStart(2,"0");
+const clock = ts => { const t = new Date(ts); return pad(t.getHours())+":"+pad(t.getMinutes()); };
+function relTime(ts){
+  const diff = Date.now()-ts;
+  if(diff < m(1)) return "только что";
+  if(diff < h(1)) return Math.floor(diff/60000)+" мин";
+  const t = new Date(ts), today = new Date();
+  if(t.toDateString() === today.toDateString()) return clock(ts);
+  if(t.toDateString() === new Date(Date.now()-d(1)).toDateString()) return "вчера";
+  return t.getDate()+" "+MONTHS[t.getMonth()].slice(0,3);
+}
+function dateShort(ts){ const t = new Date(ts); return t.getDate()+" "+MONTHS[t.getMonth()].slice(0,3)+" "+String(t.getFullYear()).slice(2); }
+function dayLabel(ts){
+  const t = new Date(ts);
+  if(t.toDateString() === new Date().toDateString()) return "Сегодня";
+  if(t.toDateString() === new Date(Date.now()-d(1)).toDateString()) return "Вчера";
+  return t.getDate()+" "+MONTHS[t.getMonth()];
+}
+function initials(name){
+  const p = name.replace(/[«»"]/g,"").trim().split(/\s+/);
+  return ((p[0]||"")[0] + ((p[1]||"")[0]||"") || "?").toUpperCase();
+}
+function plural(n,one,few,many){
+  const a = Math.abs(n)%100, b = a%10;
+  if(a>10 && a<20) return many;
+  if(b>1 && b<5) return few;
+  if(b===1) return one;
+  return many;
+}
+const mins = ms => Math.max(0, Math.floor(ms/60000));
+const lastMsg = c =>
+  c.msgs.filter(x => x.dir !== "sys").slice(-1)[0] ||
+  c.msgs.slice(-1)[0] ||
+  {dir:"in", t:"", ts:c.lastTs || 0};   /* клиент ещё заполняет анкету */
+
+/* ================= присутствие =================
+   Мессенджеры не сообщают, открыт ли у клиента чат, — только что он
+   написал. Поэтому считаем честно: писал меньше 5 минут назад — в чате;
+   пишет прямо сейчас — оранжевый; дольше 5 минут тишины — уже не в чате,
+   и показываем, когда был последний раз, а не растущее «в чате N мин». */
+function presence(c){
+  const p = c.pres || {state:"left", since:0, typing:false};
+  const e = Date.now() - p.since;
+  if(!p.since) return {k:"red", label:"не в чате"};
+  if(p.state === "left") return {k:"red", label:"вышел " + (e < m(1) ? "только что" : relAgo(e))};
+  if(p.typing)  return {k:"orange", label:"печатает…"};
+  if(e < FIVE)  return {k:"green",  label:"в чате · " + (e < m(1) ? "только что писал" : "писал " + relAgo(e))};
+  return {k:"red", label:"не в чате · был " + relAgo(e)};
+}
+function relAgo(ms){
+  if(ms < h(1)) return mins(ms)+" мин назад";
+  if(ms < d(1)){ const n = Math.floor(ms/3600000); return n+" "+plural(n,"час","часа","часов")+" назад"; }
+  const n = Math.floor(ms/86400000);
+  return n+" "+plural(n,"день","дня","дней")+" назад";
+}
+
+/* ================= умный поиск по архиву =================
+   Русский язык склоняет всё подряд, поэтому сравниваем не слова целиком,
+   а основы: «ключа», «ключом», «ключи» дают одну основу «ключ».
+   Плюс словарь синонимов — «hasp» и «лицензия» ищутся вместе с «ключом». */
+const SYNONYMS = {
+  "ключ":["hasp","лицензи","активац","sentinel","защит"],
+  "лицензи":["ключ","hasp","активац"],
+  "арпс":["xml","выгруз","обмен","формат"],
+  "выгруз":["арпс","xml","экспорт","обмен"],
+  "кс":["акт","ведомост","накопительн"],
+  "акт":["кс","ведомост"],
+  "тсн":["территориальн","норматив","индекс"],
+  "фснб":["фер","гэсн","база","дополнен","норматив"],
+  "обновлен":["дополнен","сборк","версия"],
+  "счет":["оплат","реквизит","кп","предложен"],
+  "обучен":["вебинар","курс","методичк"],
+  "устан":["настройк","развертыван","служб"]
+};
+const STOP = new Set(["и","в","на","не","с","по","а","что","как","для","от","до","за","у","о","об","к","из","же","ли","бы","или","это","при","мне","мы","вы","он","она","они","есть","был","было","быть","мой","наш","ваш"]);
+
+function stem(w){
+  w = w.toLowerCase().replace(/ё/g,"е").replace(/[^a-zа-я0-9-]/g,"");
+  if(w.length <= 4) return w;
+  return w.replace(/(ами|ями|ость|ений|ения|ение|ыми|ими|ого|его|ому|ему|ая|ое|ые|ый|ой|ий|ем|ом|ах|ях|ам|ям|ов|ев|ью|ия|ие|у|ю|а|я|ы|и|е|ь)$/,"").slice(0,9);
+}
+function tokenize(s){
+  return String(s||"").split(/[^a-zA-Zа-яА-ЯёЁ0-9-]+/)
+    .map(w => w.toLowerCase())
+    .filter(w => w.length > 1 && !STOP.has(w))
+    .map(stem)
+    .filter(Boolean);
+}
+/* Короткое слово не должно совпадать с длинным термином только по первой
+   букве: иначе предлог «в» считается совпадением с «видит», подсвечивается
+   и раздувает оценку. Префикс засчитываем от четырёх символов. */
+function hits(word, term){
+  if(word === term) return true;
+  if(word.length < 4 || term.length < 4) return false;
+  return word.startsWith(term) || term.startsWith(word);
+}
+function expand(tokens){
+  const out = new Map();
+  tokens.forEach(t => {
+    out.set(t, 1);
+    Object.keys(SYNONYMS).forEach(key => {
+      if(t.startsWith(key) || key.startsWith(t)){
+        SYNONYMS[key].forEach(s => { if(!out.has(s)) out.set(s, 0.55); });
+      }
+    });
+  });
+  return out;
+}
+
+function searchArchive(raw){
+  const base = tokenize(raw);
+  if(!base.length) return [];
+  const terms = expand(base);
+  const results = [];
+
+  convs.filter(c => c.status === "archived").forEach(c => {
+    const fields = [
+      {text:c.topic, w:3},
+      {text:c.intake ? c.intake.org : "", w:1.5},
+      {text:c.name, w:1.5},
+      {text:c.tags.join(" "), w:2.5},
+      {text:foldersOf(c).map(k => FBY[k] ? FBY[k].n : "").join(" "), w:2},
+      {text:c.msgs.map(x => x.t).join(" "), w:1}
+    ];
+
+    let score = 0;
+    const hit = new Set();
+    terms.forEach((weight, term) => {
+      let found = false;
+      fields.forEach(f => {
+        const words = tokenize(f.text);
+        const n = words.filter(w => hits(w, term)).length;
+        if(n){ score += n * f.w * weight; found = true; }
+      });
+      if(found && weight === 1) hit.add(term);
+    });
+
+    if(!score) return;
+    // все слова запроса нашлись — такой ответ почти наверняка тот самый
+    if(hit.size === base.length && base.length > 1) score *= 2.2;
+    results.push({conv:c, score, terms:[...terms.keys()], hit:[...hit]});
+  });
+
+  return results.sort((a,b) => b.score - a.score).slice(0, 40);
+}
+
+function bestSnippet(c, terms){
+  let best = null, bestN = -1;
+  c.msgs.filter(x => x.dir !== "sys" && x.t).forEach(msg => {
+    const words = tokenize(msg.t);
+    const n = terms.filter(t => words.some(w => hits(w, t))).length;
+    if(n > bestN){ bestN = n; best = msg; }
+  });
+  return best ? best.t : c.topic;
+}
+
+function highlight(text, terms){
+  const frag = document.createDocumentFragment();
+  const parts = String(text).split(/([a-zA-Zа-яА-ЯёЁ0-9-]+)/);
+  parts.forEach(p => {
+    const s = stem(p);
+    const isHit = s && terms.some(t => hits(s, t));
+    if(isHit && /[a-zA-Zа-яА-ЯёЁ0-9]/.test(p)) frag.append(el("mark", null, p));
+    else frag.append(document.createTextNode(p));
+  });
+  return frag;
+}
+
+/* ================= общие кусочки ================= */
+function avatarBlock(c, size){
+  const wrap = el("div","avawrap");
+  const ava = el("div","ava", initials(c.name));
+  ava.style.backgroundImage = "linear-gradient(145deg, color-mix(in srgb, "+c.color+" 64%, #ffffff), "+c.color+")";
+  const ch = el("span","ch "+c.provider, c.provider === "tg" ? "T" : "M");
+  ch.title = PROVIDER_L[c.provider];
+  const pr = presence(c);
+  const live = el("span","live "+pr.k);
+  live.dataset.conv = c.id;
+  live.title = pr.label;
+  wrap.append(ava, ch, live);
+  if(size){ wrap.style.width = wrap.style.height = size+"px"; ava.style.width = ava.style.height = size+"px"; }
+  return wrap;
+}
+function folderIcon(f, size){
+  const ic = el("span","fi");
+  ic.style.backgroundImage = "linear-gradient(145deg, color-mix(in srgb, "+f.c+" 66%, #ffffff), "+f.c+")";
+  if(size){ ic.style.width = ic.style.height = size+"px"; ic.style.borderRadius = Math.round(size/3)+"px"; }
+  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("width", size ? size*0.42 : 17);
+  svg.setAttribute("height", size ? size*0.42 : 17);
+  svg.setAttribute("viewBox","0 0 16 16"); svg.setAttribute("fill","none");
+  svg.setAttribute("stroke","currentColor"); svg.setAttribute("stroke-width","1.5");
+  svg.setAttribute("stroke-linejoin","round");
+  const p = document.createElementNS("http://www.w3.org/2000/svg","path");
+  p.setAttribute("d","M1.8 4.2a1 1 0 0 1 1-1h3.1l1.4 1.6h5.9a1 1 0 0 1 1 1v6.4a1 1 0 0 1-1 1H2.8a1 1 0 0 1-1-1V4.2z");
+  svg.append(p); ic.append(svg);
+  return ic;
+}
+function emptyState(text){
+  const box = el("div","empty");
+  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("width","34"); svg.setAttribute("height","34");
+  svg.setAttribute("viewBox","0 0 24 24"); svg.setAttribute("fill","none");
+  svg.setAttribute("stroke","currentColor"); svg.setAttribute("stroke-width","1.4");
+  const p = document.createElementNS("http://www.w3.org/2000/svg","path");
+  p.setAttribute("d","M3.5 6.5h17v12a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5v-12zM3 3.5h18v3H3zM9.5 11h5");
+  svg.append(p); box.append(svg, document.createTextNode(text));
+  return box;
+}
+
+/* ================= список обращений ================= */
+function matches(c){
+  if(c.status === "archived") return false;
+  if(filter !== "all" && c.status !== filter) return false;
+  if(!query) return true;
+  const q = query.toLowerCase();
+  const ik = c.intake || {};
+  return (c.name+" "+c.un+" "+(ik.org||"")+" "+(ik.key||"")+" "+c.topic+" "+c.tags.join(" ")+" "+
+          c.msgs.map(x => x.t).join(" ")).toLowerCase().includes(q);
+}
+
+function renderStats(){
+  const box = $("#stats");
+  box.textContent = "";
+  const active = convs.filter(c => c.status !== "closed" && c.status !== "archived").length;
+  const hot = convs.filter(c => c.unread > 0 && c.status !== "archived").length;
+  const live = convs.filter(c => c.status !== "archived" && presence(c).k !== "red").length;
+  const add = (cls, n, label) => {
+    const s = el("div","stat"+(cls?" "+cls:""));
+    s.append(el("b",null,String(n)), el("span",null,label));
+    box.append(s);
+  };
+  add("", active, "в работе");
+  add("hot", hot, "без ответа");
+  add("live", live, "в чате");
+  const badge = $("#inboxBadge");
+  badge.textContent = String(hot);
+  badge.hidden = hot === 0;
+}
+
+function renderFilters(){
+  const nav = $("#filters");
+  nav.textContent = "";
+  FILTERS.forEach(f => {
+    const n = f.k === "all"
+      ? convs.filter(c => c.status !== "archived").length
+      : convs.filter(c => c.status === f.k).length;
+    const b = el("button","chip");
+    b.type = "button";
+    b.setAttribute("aria-pressed", String(filter === f.k));
+    b.append(document.createTextNode(f.l), el("span","n",String(n)));
+    b.onclick = () => { filter = f.k; renderFilters(); renderList(); };
+    nav.append(b);
+  });
+}
+
+function renderList(){
+  const ul = $("#convList");
+  ul.textContent = "";
+  const items = convs.filter(matches).sort((a,b) => lastMsg(b).ts - lastMsg(a).ts);
+
+  if(!items.length){
+    const li = el("li");
+    li.append(emptyState(booting || (query ? "Ничего не нашлось по запросу «"+query+"»" : "Здесь пусто")));
+    ul.append(li);
+    renderStats();
+    return;
+  }
+
+  items.forEach(c => {
+    const lm = lastMsg(c);
+    const li = el("li");
+    const b = el("button","conv"+(c.unread ? " unread" : ""));
+    b.type = "button";
+    b.setAttribute("aria-current", String(c.id === activeId));
+
+    const main = el("div");
+    const r1 = el("div","row1");
+    r1.append(el("span","nm", c.name), el("span","tm", relTime(lm.ts)));
+    const prev = el("div","prev", (lm.dir === "out" ? "Вы: " : "") + (lm.att && !lm.t ? lm.att.n : lm.t));
+    const r3 = el("div","row3");
+    r3.append(el("span","badge "+c.status, STATUS_L[c.status]));
+    const rowMood = clientOf(c) ? moodChip(clientOf(c).mood) : null;
+    if(rowMood) r3.append(rowMood);
+    c.tags.slice(0, rowMood ? 1 : 2).forEach(t => r3.append(el("span","tag", t)));
+    if(c.unread) r3.append(el("span","cnt", String(c.unread)));
+    main.append(r1, prev, r3);
+
+    b.append(avatarBlock(c), main);
+    b.onclick = () => openConv(c.id);
+    li.append(b);
+    ul.append(li);
+  });
+  renderStats();
+}
+
+function tickPresence(){
+  document.querySelectorAll(".live[data-conv]").forEach(node => {
+    const c = byId(node.dataset.conv);
+    if(!c) return;
+    const pr = presence(c);
+    node.className = "live "+pr.k;
+    node.title = pr.label;
+  });
+  const c = byId(activeId), pill = $("#livePill");
+  if(c && pill){
+    const pr = presence(c);
+    pill.className = "livepill "+pr.k;
+    pill.textContent = "";
+    pill.append(el("i"), document.createTextNode(pr.label));
+  }
+  renderStats();
+}
+
+/* ================= переписка ================= */
+function intakeCard(c){
+  const ik = c.intake;
+  const box = el("div","intake");
+  const head = el("header");
+  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("width","14"); svg.setAttribute("height","14");
+  svg.setAttribute("viewBox","0 0 16 16"); svg.setAttribute("fill","none");
+  svg.setAttribute("stroke","currentColor"); svg.setAttribute("stroke-width","1.8");
+  svg.setAttribute("stroke-linecap","round"); svg.setAttribute("stroke-linejoin","round");
+  const p = document.createElementNS("http://www.w3.org/2000/svg","path");
+  p.setAttribute("d","M3 8.4l3 3 7-7"); svg.append(p);
+  // Анкета теперь идёт параллельно с вопросом — показываем, на каком она этапе
+  const st = ik.status || "done";
+  const HEAD = {done:"Анкета заполнена", active:"Клиент заполняет анкету",
+                skipped:"Клиент отложил анкету", none:"Анкета ещё не заполнена"};
+  box.classList.add("st-" + st);
+  head.append(svg, document.createTextNode(HEAD[st] || HEAD.done));
+  if(st === "done") head.append(el("span","when", clock(ik.at)));
+  box.append(head);
+
+  const dl = document.createElement("dl");
+  const f = (label, value, mono) => {
+    const cell = el("div","f");
+    cell.append(el("dt",null,label));
+    const empty = !value || value === "—";
+    const dd = el("dd", (mono && !empty ? "mono" : "") + (value === "нет ключа" || empty ? " miss" : ""),
+                  empty ? "не указано" : value);
+    cell.append(dd);
+    dl.append(cell);
+  };
+  f("Ключ / лицензия", ik.key, true);
+  f("Организация", ik.org);
+  f("Имя и фамилия", ik.fio);
+  f("Телефон", ik.phone, true);
+  box.append(dl);
+  return box;
+}
+
+/* Картинку показываем сразу: оператору важно увидеть скриншот ошибки,
+   а не имя файла. Остальные файлы остаются ссылкой на скачивание. */
+function attachment(att){
+  const isImage = (att.kind || "").indexOf("image") === 0 ||
+                  /\.(jpe?g|png|gif|webp|bmp|heic)$/i.test(att.n || "");
+
+  if(att.url && isImage){
+    const a = el("a","shotwrap");
+    a.href = att.url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.title = att.n + (att.s ? " · " + att.s : "");
+    const img = document.createElement("img");
+    img.className = "shot";
+    img.src = att.url;
+    img.alt = att.n || "Вложение";
+    img.loading = "lazy";
+    a.append(img);
+    return a;
+  }
+
+  const box = att.url ? el("a","att") : el("div","att");
+  if(att.url){ box.href = att.url; box.target = "_blank"; box.rel = "noopener"; box.download = att.n; }
+  box.append(el("span","ic", att.k), el("span",null, att.n), el("span","sz", att.s));
+  return box;
+}
+
+function renderThread(){
+  const c = byId(activeId);
+  const box = $("#msgs");
+  if(!c){
+    $("#deleteBtn").hidden = true;
+    $("#tName").textContent = "—";
+    $("#tSub").textContent = "";
+    $("#inbox").dataset.idle = "1";
+    renderIdle();
+    return;
+  }
+  delete $("#inbox").dataset.idle;
+  box.textContent = "";
+
+  $("#tName").textContent = c.name;
+  const sub = $("#tSub");
+  sub.textContent = "";
+  const pl = el("span","pill");
+  pl.append(el("span","dot "+c.provider), document.createTextNode(PROVIDER_L[c.provider]));
+  const pr = presence(c);
+  const live = el("span","livepill "+pr.k);
+  live.id = "livePill";
+  live.append(el("i"), document.createTextNode(pr.label));
+  sub.append(pl, live, el("span",null,"id "+c.ext));
+  $("#statusSel").value = c.status;
+  $("#archiveBtn").querySelector("span").textContent = c.status === "archived" ? "Сменить папку" : "В архив";
+  $("#deleteBtn").hidden = c.status !== "archived";
+
+  // Первое, что должен увидеть менеджер, — с кем он сейчас говорит
+  const threadClient = clientOf(c);
+  if(threadClient){
+    const bar = moodBar(threadClient);
+    if(bar) box.append(bar);
+  }
+
+  if(c.intake) box.append(intakeCard(c));
+
+  let lastDay = "", lastDir = "";
+  c.msgs.forEach(msg => {
+    const dl = dayLabel(msg.ts);
+    if(dl !== lastDay){ box.append(el("div","daysep", dl)); lastDay = dl; lastDir = ""; }
+    if(msg.dir === "sys"){ box.append(el("div","sys", msg.t)); lastDir = ""; return; }
+
+    const wrap = el("div","m "+msg.dir+(msg.dir !== lastDir ? " first" : ""));
+    if(msg.t) wrap.append(el("div","bub", msg.t));
+    if(msg.att) wrap.append(attachment(msg.att));
+    const meta = el("div","meta");
+    meta.append(el("span",null, clock(msg.ts)));
+    if(msg.dir === "out"){
+      const label = msg.st === "read" ? "✓✓ прочитано" : msg.st === "delivered" ? "✓✓ доставлено" : "✓ отправлено";
+      meta.append(el("span", msg.st === "read" ? "ok" : null, label));
+    }
+    wrap.append(meta);
+    box.append(wrap);
+    lastDir = msg.dir;
+  });
+
+  if(typingIn === c.id){
+    const t = el("div","typing");
+    t.append(el("i"),el("i"),el("i"));
+    box.append(t);
+  }
+  box.scrollTop = box.scrollHeight;
+}
+
+/* ================= свёрнутый чат =================
+   Когда ни одно обращение не открыто, справа — тихий экран: кто дольше
+   всех ждёт ответа и один полезный совет. Шар медленно «дышит»; клик
+   по нему — следующий совет. Ничего не мигает и не требует внимания. */
+const TIPS = [
+  "Enter — отправить ответ, Shift+Enter — новая строка.",
+  "Кнопка «Шаблоны» вставляет готовый ответ — его можно поправить перед отправкой.",
+  "Esc сворачивает открытый чат и возвращает этот экран.",
+  "В архиве строка «Спросить у базы» считает: «сколько обращений про АРПС за месяц».",
+  "Пометка о манере клиента всплывёт плашкой при его следующем обращении.",
+  "Календарь в левой панели: клик по дню — обращения, ушедшие в архив в этот день.",
+  "Скриншот можно отправить клиенту кнопкой «Файл» — он придёт картинкой, а не вложением."
+];
+let tipIdx = Math.floor(Math.random() * TIPS.length);
+
+function closeChat(){
+  activeId = null;
+  chatClosed = true;
+  typingIn = null;
+  $("#inbox").dataset.view = "list";
+  renderList(); renderThread(); renderCard();
+}
+
+function waitingConvs(){
+  return convs.filter(c => c.status !== "archived" && c.status !== "closed")
+    .map(c => ({c, lm: lastMsg(c)}))
+    .filter(x => x.lm.dir === "in" && x.lm.ts)
+    .sort((a,b) => a.lm.ts - b.lm.ts);
+}
+
+/* Анекдоты для колонки на тихом экране — про сметчиков и поддержку.
+   Каждый день начинается со своего, кнопка «Ещё» листает дальше. */
+const JOKES = [
+  "Оптимист видит стакан наполовину полным, пессимист — наполовину пустым. Сметчик видит, что стакан не учтён в ресурсной ведомости.",
+  "У каждого сметчика есть файлы «Итоговая», «Итоговая_2», «Итоговая_точно» и «Итоговая_последняя_правда».",
+  "Если смета сошлась с первого раза — проверьте, ту ли смету вы открыли.",
+  "Сметчик не опаздывает. Он применяет понижающий коэффициент ко времени прибытия.",
+  "Экспертиза вернула смету всего с одним замечанием. Сметчик записал этот день в лучшие дни года.",
+  "Клиент прислал скриншот ошибки: сфотографирован на телефон, под углом, с бликом от лампы. Специалист всё понял с первого взгляда — опыт.",
+  "— Сколько сметчиков нужно, чтобы вкрутить лампочку?\n— Один вкрутит, трое будут спорить, по какой расценке.",
+  "Индексы обновили в пятницу вечером. Совпадение? Сметчики так не думают.",
+  "Сметчик на свидании: «Давай сначала согласуем объёмы, а о цене поговорим потом».",
+  "Самое страшное слово для сметчика — не «ошибка», а «а можно ещё одну маленькую правочку?».",
+  "Отпуск сметчика состоит из двух этапов: подготовительного и выгрузки в АРПС.",
+  "— Как понять, что сметчик в отпуске?\n— Он считает шезлонги на пляже по ГЭСН.",
+  "Сметчик не спорит с заказчиком. Он молча добавляет строку «непредвиденные затраты».",
+  "Лучший подарок сметчику — заказчик, который дочитал пояснительную записку.",
+  "Поддержка на связи круглосуточно. Кофемашина тоже, но её согласия никто не спрашивал.",
+  "«Ключ не видит!» — написал клиент. Специалист час проверял драйвер, пока не выяснилось, что ключ остался в другой куртке.",
+  "Клиент: «У меня всё сломалось!»\nПоддержка: «Что именно?»\nКлиент: «Настроение. А программа — просто повод написать».",
+  "Новичок спросил, сколько стоит ремонт. Сметчик ответил: «Смотря в какой базе, в каком квартале и какое настроение у экспертизы».",
+  "Специалист ответил так быстро, что клиент ещё не успел описать проблему. И всё равно угадал.",
+  "Сметчика попросили посчитать до десяти. Он уточнил: в базисных ценах или в текущих?"
+];
+let jokeIdx = Math.floor(Date.now() / 86400000) % JOKES.length;
+
+/* ---------- сводка дня ---------- */
+let todayStats = null, todayAt = 0, todayBusy = false;
+
+/* Демо без сервера — считаем по тем сообщениям, что есть в памяти */
+function localToday(){
+  const day0 = new Date(); day0.setHours(0,0,0,0);
+  const t0 = day0.getTime();
+  const st = {new_convs:0, clients:0, in_msgs:0, out_msgs:0, archived:0, waiting:waitingConvs().length,
+              avg_reply_min:null, typical:null};
+  const who = new Set(), perDay = {};
+  let replySum = 0, replyN = 0;
+  convs.forEach(c => {
+    const real = c.msgs.filter(x => x.dir !== "sys");
+    if(!real.length) return;
+    const first = real[0].ts;
+    if(first >= t0) st.new_convs++;
+    else if(first >= t0 - d(14)){ const k = dayKey(first); perDay[k] = (perDay[k]||0) + 1; }
+    let pendingIn = null;
+    real.forEach(x => {
+      if(x.ts >= t0 && x.dir === "in"){ st.in_msgs++; who.add(c.id); }
+      if(x.ts >= t0 && x.dir === "out") st.out_msgs++;
+      if(x.dir === "in" && pendingIn === null) pendingIn = x.ts;
+      if(x.dir === "out" && pendingIn !== null){
+        if(pendingIn >= t0){ replySum += x.ts - pendingIn; replyN++; }
+        pendingIn = null;
+      }
+    });
+    if(c.status === "archived" && archivedAt(c) >= t0) st.archived++;
+  });
+  st.clients = who.size;
+  if(replyN) st.avg_reply_min = Math.round(replySum / replyN / 6000) / 10;
+  const days = Object.keys(perDay);
+  if(days.length) st.typical = Math.round(days.reduce((a,k) => a + perDay[k], 0) / days.length * 10) / 10;
+  return st;
+}
+
+function fetchToday(){
+  if(!LIVE) return;                        // демо считается на месте, кэш не нужен
+  if(todayBusy || Date.now() - todayAt < 30000) return;
+  todayBusy = true;
+  api("/api/today")
+    .then(st => { todayStats = st; todayAt = Date.now(); if(!activeId && section === "inbox") renderIdle(); })
+    .catch(e => console.warn("сводка дня не получена:", e.message))
+    .finally(() => { todayBusy = false; });
+}
+
+/* Оценка дня: сравниваем поток с обычным к этому часу рабочего дня,
+   добавляем очередь и скорость ответа. Четыре ступени — от спокойного
+   до аврала. */
+const LOADS = [
+  {n:"Спокойный день",   c:"var(--ok)"},
+  {n:"Обычный день",     c:"var(--acc)"},
+  {n:"Напряжённый день", c:"var(--warn)"},
+  {n:"Аврал",            c:"var(--crit)"}
+];
+function dayLoad(st){
+  const now = new Date();
+  const hr = now.getHours() + now.getMinutes() / 60;
+  const frac = Math.min(1, Math.max(0.15, (hr - 9) / 9));    // к этому часу обычно пришла такая доля
+  const typical = st.typical || 5;                            // истории ещё нет — считаем обычным ~5 в день
+  const expected = typical * frac;
+  const ratio = st.new_convs / Math.max(expected, 1);
+
+  let score = ratio < 0.6 ? 0 : ratio < 1.3 ? 1 : ratio < 2 ? 2 : 3;
+  if(st.waiting >= 5 || (st.avg_reply_min || 0) > 30) score = Math.min(3, score + 1);
+  if(!st.new_convs && !st.waiting) score = 0;
+
+  const why = [];
+  if(!st.new_convs) why.push("новых обращений пока нет");
+  else if(ratio < 0.6) why.push("обращений меньше, чем обычно к этому часу");
+  else if(ratio < 1.3) why.push("поток как обычно");
+  else why.push("обращений в " + (Math.round(ratio * 10) / 10).toString().replace(".", ",") + " раза больше обычного");
+  if(st.waiting) why.push(st.waiting + " " + plural(st.waiting,"клиент ждёт","клиента ждут","клиентов ждут") + " ответа");
+  if(st.avg_reply_min != null) why.push("отвечаем в среднем за " + String(st.avg_reply_min).replace(".", ",") + " мин");
+  return {score, lv:LOADS[score], why:why.join(" · "), guess:!st.typical};
+}
+
+function renderIdle(){
+  const box = $("#msgs");
+  let wrap = box.querySelector(".idle");
+  if(!wrap){
+    box.textContent = "";
+    wrap = el("div","idle");
+    const orb = el("button","orb");
+    orb.type = "button";
+    orb.title = "Следующий совет";
+    orb.setAttribute("aria-label","Следующий совет");
+    orb.append(el("i"), el("i"), el("i"));
+    orb.onclick = () => { tipIdx = (tipIdx + 1) % TIPS.length; renderIdle(); };
+    wrap.append(orb, el("div","idlelive"));
+    box.append(wrap);
+  }
+  fetchToday();
+  // Пока сервер не прислал цифры — не показываем нули, а честно ждём
+  const pending = LIVE && !todayStats;
+  const st = LIVE ? (todayStats || {new_convs:0, clients:0, in_msgs:0, out_msgs:0, archived:0,
+                                     waiting:waitingConvs().length, avg_reply_min:null, typical:null})
+                  : localToday();
+  const live = wrap.querySelector(".idlelive");
+  live.textContent = "";
+
+  const now = new Date(), hr = now.getHours();
+  const hello = hr < 5 ? "Доброй ночи" : hr < 12 ? "Доброе утро" : hr < 18 ? "Добрый день" : hr < 23 ? "Добрый вечер" : "Доброй ночи";
+  live.append(el("h3",null,hello),
+              el("p","idate", WD_FULL[now.getDay()] + ", " + now.getDate() + " " + MONTHS[now.getMonth()] + " · " + clock(now.getTime())));
+
+  const grid = el("div","igrid");
+  const left = el("div","icol");
+
+  /* оценка дня */
+  const load = dayLoad(st);
+  const lc = el("div","icard iload");
+  lc.style.setProperty("--lc", load.lv.c);
+  const lh = el("div","ilh");
+  lh.append(el("b",null,load.lv.n), el("span",null,"оценка дня"));
+  const meter = el("div","imeter");
+  LOADS.forEach((l,i) => {
+    const seg = el("i", i <= load.score ? "on" : "");
+    seg.title = l.n;
+    meter.append(seg);
+  });
+  lc.append(lh, meter, el("p",null, pending ? "Считаю цифры дня…"
+    : load.why + (load.guess ? " · обычный день пока оцениваю грубо — мало истории" : "")));
+  if(pending) lc.classList.add("wait");
+  left.append(lc);
+
+  /* цифры дня */
+  const dc = el("div","icard");
+  dc.append(el("div","ittl","Сегодня"));
+  const cells = el("div","icells");
+  [[st.new_convs, plural(st.new_convs,"новое обращение","новых обращения","новых обращений")],
+   [st.clients, plural(st.clients,"клиент написал","клиента написали","клиентов написали")],
+   [st.in_msgs, plural(st.in_msgs,"сообщение от клиентов","сообщения от клиентов","сообщений от клиентов")],
+   [st.out_msgs, plural(st.out_msgs,"ответ отправлен","ответа отправлено","ответов отправлено")],
+   [st.archived, "ушло в архив"],
+   [st.avg_reply_min == null ? "—" : String(st.avg_reply_min).replace(".", ","), "мин — средний ответ"]
+  ].forEach(p => {
+    const d = el("div");
+    d.append(el("b",null, pending ? "…" : String(p[0])), el("span",null,p[1]));
+    cells.append(d);
+  });
+  dc.append(cells);
+  left.append(dc);
+
+  /* кто ждёт */
+  const wait = waitingConvs();
+  if(wait.length){
+    const wc = el("div","icard");
+    wc.append(el("div","ittl","Дольше всех ждут"));
+    const list = el("div","iwait");
+    wait.slice(0,3).forEach(x => {
+      const b = el("button","iw");
+      b.type = "button";
+      const t = el("div","iwt");
+      t.append(el("b",null,x.c.name), el("span",null, x.lm.att && !x.lm.t ? x.lm.att.n : x.lm.t));
+      b.append(avatarBlock(x.c, 34), t, el("em",null, relAgo(Date.now() - x.lm.ts).replace(" назад","")));
+      b.onclick = () => openConv(x.c.id);
+      list.append(b);
+    });
+    wc.append(list);
+    left.append(wc);
+  } else {
+    left.append(el("div","icalm","Все ответы даны. Можно выдохнуть."));
+  }
+
+  /* колонка анекдотов */
+  const jc = el("div","icard ijoke");
+  const jh = el("div","ijh");
+  jh.append(el("span","ijicon","☺"), el("b",null,"Анекдот"), el("span","ijn", (jokeIdx + 1) + " / " + JOKES.length));
+  const jt = el("p","ijt", JOKES[jokeIdx]);
+  const more = el("button","ibtn","Ещё один");
+  more.type = "button";
+  more.onclick = () => { jokeIdx = (jokeIdx + 1) % JOKES.length; renderIdle(); };
+  jc.append(jh, jt, more);
+
+  grid.append(left, jc);
+  live.append(grid);
+
+  const tip = el("button","itip");
+  tip.type = "button";
+  tip.title = "Следующий совет";
+  tip.append(el("span",null,"совет"), document.createTextNode(TIPS[tipIdx]));
+  tip.onclick = () => { tipIdx = (tipIdx + 1) % TIPS.length; renderIdle(); };
+  live.append(tip);
+}
+setInterval(() => {
+  if(activeId) return;
+  tipIdx = (tipIdx + 1) % TIPS.length;
+  if(section === "inbox") renderIdle();
+}, 30000);
+
+/* ================= карточка клиента ================= */
+function renderCard(){
+  const c = byId(activeId);
+  const box = $("#cbody");
+  box.textContent = "";
+  if(!c) return;
+  const ik = c.intake || {};
+
+  const p = el("div","cperson");
+  const who = el("div");
+  who.append(el("div","nm", c.name), el("div","un", c.un));
+  p.append(avatarBlock(c, 48), who);
+
+  const dl = el("dl","info");
+  const pair = (k,v,cls) => { dl.append(el("dt",null,k), el("dd", cls||null, v)); };
+  pair("Канал", PROVIDER_L[c.provider]);
+  pair("ID в мессенджере", c.ext, "mono");
+  pair("Телефон", ik.phone || "—", "mono");
+  pair("Организация", ik.org || "—");
+  pair("Ключ / лицензия", ik.key || "—", "mono");
+  pair("Продукт", c.product);
+  pair("Версия", c.ver, "mono");
+  pair("Сопровождение", c.support, c.support.indexOf("нет") === 0 ? "due" : "mono");
+  pair("Ответственный", c.assignee);
+  const days = Math.round(c.since/86400000);
+  pair("Клиент", days > 365
+    ? Math.floor(days/365)+" "+plural(Math.floor(days/365),"год","года","лет")
+    : days+" "+plural(days,"день","дня","дней"));
+  box.append(p, dl);
+
+  const cardClient = clientOf(c);
+  if(cardClient){
+    const s = el("div","sect");
+    const h = el("h3",null,"Как разговаривать");
+    s.append(h);
+    const chip = moodChip(cardClient.mood);
+    if(chip){
+      s.append(chip);
+      s.append(el("div","kv", MBY[cardClient.mood].hint));
+      s.lastChild.style.marginTop = "7px";
+      s.lastChild.style.color = "var(--ink-3)";
+      s.lastChild.style.fontFamily = "var(--sans)";
+      s.lastChild.style.fontSize = "11.5px";
+      s.lastChild.style.lineHeight = "1.45";
+    } else {
+      s.append(el("div","kv","пометки пока нет — поставьте при отправке в архив"));
+    }
+    const open = el("button","ibtn","Открыть в базе клиентов");
+    open.type = "button";
+    open.style.marginTop = "11px";
+    open.onclick = () => { openClient = cardClient.id; setSection("clients"); };
+    s.append(open);
+    box.append(s);
+  }
+
+  if(c.status === "archived"){
+    const list = foldersOf(c).map(k => FBY[k] || UNDEF);
+    const s = el("div","sect");
+    s.append(el("h3",null, list.length > 1 ? "Папки архива" : "Папка архива"));
+    (list.length ? list : [UNDEF]).forEach(f => {
+      const fb = el("div","folderbox");
+      fb.append(folderIcon(f, 30), el("span",null,(f.g ? f.g.n + " › " : "") + f.n));
+      s.append(fb);
+    });
+    box.append(s);
+  }
+
+  const sT = el("div","sect");
+  sT.append(el("h3",null,"Теги"));
+  const tags = el("div","tags");
+  c.tags.forEach(t => {
+    const sp = el("span","tag", t);
+    const x = el("button",null,"×");
+    x.type = "button"; x.title = "Убрать тег";
+    x.onclick = () => { c.tags = c.tags.filter(v => v !== t); renderCard(); renderList(); };
+    sp.append(x); tags.append(sp);
+  });
+  const add = el("button","tag addtag","+ тег");
+  add.type = "button";
+  add.onclick = () => { const v = prompt("Новый тег"); if(v && v.trim()){ c.tags.push(v.trim().slice(0,20)); renderCard(); renderList(); } };
+  tags.append(add); sT.append(tags);
+
+  const sN = el("div","sect");
+  sN.append(el("h3",null,"Заметка оператора"));
+  const ta = el("textarea","note");
+  ta.id = "noteBox"; ta.value = c.note; ta.placeholder = "Видна только вашей команде";
+  const hint = el("div","savedhint");
+  let tmr;
+  ta.oninput = () => {
+    c.note = ta.value;
+    clearTimeout(tmr);
+    tmr = setTimeout(() => {
+      const done = () => { hint.textContent = "сохранено"; setTimeout(() => { hint.textContent = ""; }, 1400); };
+      if(LIVE){
+        api("/api/conversations/" + c.sid, {method:"PATCH", body:JSON.stringify({note:c.note})})
+          .then(done)
+          .catch(err => { hint.textContent = "не сохранилось"; console.warn(err.message); });
+      } else done();
+    }, 500);
+  };
+  sN.append(ta, hint);
+  box.append(sT, sN);
+}
+
+/* ================= раздел «Архив» ================= */
+let aMode = "find";          // find — найти обращение, ask — спросить у базы цифры
+let calMonth = null;         // первое число показанного месяца
+let calDay = null;           // выбранный день "ГГГГ-ММ-ДД" или null
+let askState = null;         // {q, loading, res}
+
+const archivedAt = c => c.archivedAt || lastMsg(c).ts;
+const dayKey = ts => { const t = new Date(ts); return t.getFullYear()+"-"+pad(t.getMonth()+1)+"-"+pad(t.getDate()); };
+const foldersOf = c => (c.folders && c.folders.length) ? c.folders : (c.folder ? [c.folder] : []);
+const inFolder = (c, key) => GBY[key]
+  ? foldersOf(c).some(k => FBY[k] && FBY[k].g === GBY[key])
+  : foldersOf(c).includes(key);
+const countIn = (list, key) => list.filter(c => inFolder(c, key)).length;
+
+/* ---------- календарь ---------- */
+const WD = ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
+const WD_FULL = ["воскресенье","понедельник","вторник","среда","четверг","пятница","суббота"];
+const MONTH_N = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+
+function renderCalendar(){
+  const box = $("#calBox");
+  if(!box) return;
+  box.textContent = "";
+  const now = new Date();
+  if(!calMonth) calMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  // Шапка — сегодняшний день крупно, на неё и приятно смотреть
+  const hero = el("div","calhero");
+  const big = el("div","cbig", String(now.getDate()));
+  const side = el("div","cside");
+  side.append(el("b",null, MONTHS[now.getMonth()] + " " + now.getFullYear()),
+              el("span",null, WD_FULL[now.getDay()]),
+              el("i","cclock", clock(now.getTime())));
+  hero.append(big, side);
+  box.append(hero);
+
+  // Сколько обращений ушло в архив по дням — оттенок ячейки
+  const per = {};
+  convs.filter(c => c.status === "archived").forEach(c => {
+    const k = dayKey(archivedAt(c)); per[k] = (per[k]||0) + 1;
+  });
+  const max = Math.max(1, ...Object.values(per));
+
+  const nav = el("div","calnav");
+  const prev = el("button","iconbtn","‹"); prev.type = "button"; prev.setAttribute("aria-label","Предыдущий месяц");
+  const next = el("button","iconbtn","›"); next.type = "button"; next.setAttribute("aria-label","Следующий месяц");
+  prev.onclick = () => { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()-1, 1); renderCalendar(); };
+  next.onclick = () => { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 1); renderCalendar(); };
+  const title = el("button","calttl", MONTH_N[calMonth.getMonth()] + " " + calMonth.getFullYear());
+  title.type = "button"; title.title = "К текущему месяцу";
+  title.onclick = () => { calMonth = new Date(now.getFullYear(), now.getMonth(), 1); renderCalendar(); };
+  nav.append(prev, title, next);
+  box.append(nav);
+
+  const grid = el("div","calgrid");
+  WD.forEach((w,i) => grid.append(el("span","wd"+(i>4?" we":""), w)));
+  const first = (calMonth.getDay() + 6) % 7;            // с понедельника
+  const days = new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 0).getDate();
+  for(let i = 0; i < first; i++) grid.append(el("span","cd blank"));
+  let monthTotal = 0;
+  for(let dnum = 1; dnum <= days; dnum++){
+    const dt = new Date(calMonth.getFullYear(), calMonth.getMonth(), dnum);
+    const k = dayKey(dt.getTime());
+    const n = per[k] || 0;
+    monthTotal += n;
+    const b = el("button","cd");
+    b.type = "button";
+    if(dt.getDay() === 0 || dt.getDay() === 6) b.classList.add("we");
+    if(k === dayKey(now.getTime())) b.classList.add("today");
+    if(k === calDay) b.classList.add("sel");
+    if(n){ b.classList.add("has"); b.style.setProperty("--heat", String(0.18 + 0.62 * n / max)); }
+    b.append(el("span",null,String(dnum)));
+    if(n) b.append(el("i", "cdot"));
+    b.title = n ? n + " " + plural(n,"обращение","обращения","обращений") + " в архив" : "";
+    b.onclick = () => { calDay = calDay === k ? null : k; openFolder = null; closeCal(); setSection("archive"); };
+    grid.append(b);
+  }
+  box.append(grid);
+
+  const foot = el("div","calfoot");
+  foot.append(el("b",null,String(monthTotal)),
+              document.createTextNode(" " + plural(monthTotal,"обращение","обращения","обращений") + " ушло в архив за " + MONTH_N[calMonth.getMonth()].toLowerCase()));
+  box.append(foot);
+  if(calDay){
+    const clr = el("button","ibtn wide","Показать все дни");
+    clr.type = "button";
+    clr.onclick = () => { calDay = null; closeCal(); if(section === "archive") renderArchive(); };
+    box.append(clr);
+  }
+}
+/* Листок календаря в левой панели: месяц и число, по клику — весь месяц */
+const MON_SHORT = ["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
+function tickCalMini(){
+  const now = new Date();
+  $("#calMiniM").textContent = MON_SHORT[now.getMonth()];
+  $("#calMiniD").textContent = String(now.getDate());
+  $("#calBtn").querySelector(".rtip").textContent = "Календарь · " + now.getDate() + " " + MONTHS[now.getMonth()] + ", " + WD_FULL[now.getDay()];
+  const c = document.querySelector(".cclock");
+  if(c) c.textContent = clock(now.getTime());
+}
+function closeCal(){ $("#calBox").hidden = true; $("#calBtn").setAttribute("aria-expanded","false"); }
+$("#calBtn").onclick = e => {
+  e.stopPropagation();
+  const box = $("#calBox");
+  box.hidden = !box.hidden;
+  $("#calBtn").setAttribute("aria-expanded", String(!box.hidden));
+  if(!box.hidden){ $("#skinMenu").hidden = true; renderCalendar(); }
+};
+$("#calBox").addEventListener("click", e => e.stopPropagation());
+document.addEventListener("click", () => { if(!$("#calBox").hidden) closeCal(); });
+document.addEventListener("keydown", e => {
+  // Esc сначала закрывает календарь — и больше ничего
+  if(e.key === "Escape" && !$("#calBox").hidden){ closeCal(); e.stopImmediatePropagation(); }
+});
+tickCalMini();
+setInterval(tickCalMini, 20000);
+
+/* ---------- строка «спросить у базы» ---------- */
+const ASK_EXAMPLES = [
+  "Сколько пользователей написало про драйвер в сентябре?",
+  "Сколько разговоров закончилось на 5-й минуте в этом месяце?",
+  "Обращения по темам за месяц",
+  "Обращения по разделам",
+  "Среднее время разговора за 30 дней",
+  "Обращения по дням за 14 дней"
+];
+const ASK_RX = /^\s*(сколько|скольк|какой|какая|какие|каков|кто|средн|топ|статистик|покажи|в каком|по месяц|по дням|по тем)/i;
+
+function setMode(mode){
+  aMode = mode;
+  $("#modeFind").setAttribute("aria-pressed", String(mode === "find"));
+  $("#modeAsk").setAttribute("aria-pressed", String(mode === "ask"));
+  $("#aq").placeholder = mode === "ask"
+    ? "Спросите цифрами: сколько пользователей написало про АРПС в сентябре?"
+    : "Например: не видит ключ";
+  $(".asearch").classList.toggle("ask", mode === "ask");
+  renderArchive();
+}
+
+function runAsk(q){
+  q = q.trim();
+  if(!q) return;
+  askState = {q:q, loading:true, res:null};
+  renderArchive();
+  const hist = store.get("askHist", []).filter(x => x !== q);
+  hist.unshift(q); store.set("askHist", hist.slice(0,6));
+
+  if(!LIVE){
+    askState = {q:q, loading:false, res:{ok:false,
+      answer:"В демо-режиме считать не из чего: строка отвечает по настоящей базе, когда пульт открыт с сервера."}};
+    renderArchive();
+    return;
+  }
+  api("/api/ask?q=" + encodeURIComponent(q))
+    .then(res => { if(askState && askState.q === q){ askState = {q:q, loading:false, res:res}; renderArchive(); } })
+    .catch(e => {
+      // 404 — страница новая, а сервер ещё старый: строке не к кому обратиться
+      const msg = /not found|404/i.test(e.message)
+        ? "Сервер запущен в старой версии и пока не умеет отвечать. Перезапустите «Турбопульт — запустить» и спросите снова."
+        : "Не получилось: " + e.message;
+      askState = {q:q, loading:false, res:{ok:false, answer:msg}};
+      renderArchive();
+    });
+}
+
+function askCard(){
+  const card = el("div","askcard");
+  if(!askState){
+    card.classList.add("intro");
+    card.append(el("b",null,"Спросите у базы что угодно"),
+                el("p",null,"Считает по всем обращениям: сколько людей, по каким темам, в какие дни, сколько длились разговоры. Нажмите Enter, чтобы спросить."));
+    const ex = el("div","askex");
+    const hist = store.get("askHist", []);
+    (hist.length ? hist.concat(ASK_EXAMPLES).slice(0,6) : ASK_EXAMPLES).forEach(t => {
+      const b = el("button","askchip", t);
+      b.type = "button";
+      b.onclick = () => { $("#aq").value = t; aQuery = t; runAsk(t); };
+      ex.append(b);
+    });
+    card.append(ex);
+    return card;
+  }
+
+  const q = el("div","askq");
+  q.append(el("span","qm","?"), el("span",null, askState.q));
+  card.append(q);
+  if(askState.loading){ card.append(el("div","askload","Считаю…")); return card; }
+
+  const r = askState.res || {};
+  if(!r.ok){ card.append(el("div","askerr", r.answer || "Не понял вопрос")); return card; }
+
+  if(r.value != null && !r.rows){
+    const big = el("div","askbig");
+    big.append(el("b",null, String(r.value).replace(".", ",")), el("span",null, r.unit || ""));
+    card.append(big);
+  } else if(r.rows){
+    card.append(el("div","asktitle", r.title || r.answer));
+    if(r.chart === "bar" && r.rows.length && typeof r.rows[0][1] === "number"){
+      const mx = Math.max(1, ...r.rows.map(x => x[1] || 0));
+      const bars = el("div","askbars");
+      r.rows.forEach(row => {
+        const line = el("div","abar");
+        const fill = el("i"); fill.style.width = Math.max(2, 100 * (row[1]||0) / mx) + "%";
+        const track = el("span","track"); track.append(fill);
+        line.append(el("span","lbl", String(row[0] == null ? "—" : row[0])), track, el("b",null,String(row[1])));
+        bars.append(line);
+      });
+      card.append(bars);
+    } else {
+      const t = el("table","asktbl");
+      const hr = el("tr");
+      (r.columns || []).forEach(cn => hr.append(el("th",null,cn)));
+      t.append(hr);
+      r.rows.forEach(row => {
+        const tr = el("tr");
+        row.forEach(v => tr.append(el("td",null, v == null ? "—" : String(v))));
+        t.append(tr);
+      });
+      card.append(t);
+    }
+  }
+  const meta = el("div","askmeta");
+  if(r.understood) meta.append(el("span",null,"Понял так: " + r.understood));
+  meta.append(el("span","eng", r.engine === "claude" ? "отвечает Claude" : "встроенный разбор"));
+  card.append(meta);
+  return card;
+}
+
+/* ---------- плитки папок ---------- */
+function folderTile(f, n, opts){
+  const b = el("button","ftile" + (n ? "" : " zero"));
+  b.type = "button";
+  b.style.setProperty("--fc", f.c);
+  b.append(el("span","tn", f.n));
+  if(opts && opts.count !== false) b.append(el("span","tc", String(n)));
+  return b;
+}
+
+function folderTree(list, onPick, opts){
+  opts = opts || {};
+  const wrap = el("div","ftree" + (opts.compact ? " compact" : ""));
+  const q = (opts.filter || "").toLowerCase();
+  let shown = 0;
+  GROUPS.forEach(g => {
+    const gMatch = !q || g.n.toLowerCase().includes(q);
+    const kids = g.kids.filter(f => gMatch || f.n.toLowerCase().includes(q));
+    if(!kids.length) return;
+    shown++;
+    const card = el("section","fgroup");
+    card.style.setProperty("--fc", g.c);
+    const head = el(opts.compact ? "div" : "button","fghead");
+    if(!opts.compact){ head.type = "button"; head.onclick = () => onPick(g.k, true); head.title = "Все обращения раздела"; }
+    const t = el("div","ft");
+    t.append(el("b",null,g.n), el("span",null,g.hint));
+    head.append(folderIcon(g, opts.compact ? 30 : 38), t);
+    if(opts.count !== false) head.append(el("span","fc", String(countIn(list, g.k))));
+    card.append(head);
+    const tiles = el("div","ftiles");
+    kids.forEach(f => {
+      const tile = folderTile(f, countIn(list, f.k), opts);
+      const sel = Array.isArray(opts.selected) ? opts.selected.includes(f.k) : opts.selected === f.k;
+      if(sel) tile.setAttribute("aria-pressed","true");
+      tile.onclick = () => onPick(f.k, false);
+      tiles.append(tile);
+    });
+    card.append(tiles);
+    wrap.append(card);
+  });
+  if(!shown) wrap.append(el("div","empty","Подходящей папки нет — отправьте в «Не определённую тему»"));
+  return wrap;
+}
+
+function undefTile(list, onPick, selected){
+  const b = el("button","fundef");
+  b.type = "button";
+  if(selected) b.setAttribute("aria-pressed","true");
+  const t = el("div","ft");
+  t.append(el("b",null,UNDEF.n), el("span",null,UNDEF.hint));
+  b.append(folderIcon(UNDEF, 34), t, el("span","fc", String(countIn(list, "undef"))));
+  b.onclick = () => onPick("undef", false);
+  return b;
+}
+
+/* ---------- экран архива ---------- */
+function renderArchive(){
+  const body = $("#aBody");
+  const hint = $("#aHint");
+  const askBox = $("#askBox");
+  body.textContent = "";
+  askBox.textContent = "";
+  if(!$("#calBox").hidden) renderCalendar();
+  const archived = convs.filter(c => c.status === "archived");
+  $("#aCount").textContent = archived.length + " " + plural(archived.length,"обращение","обращения","обращений") + " в архиве";
+  $("#aClear").hidden = !aQuery;
+
+  /* --- вопрос к базе --- */
+  if(aMode === "ask"){
+    hint.textContent = "Пишите как человеку: период, тему, длительность разговора — Enter, и ответ появится ниже.";
+    askBox.append(askCard());
+  }
+
+  /* --- умный поиск --- */
+  if(aMode === "find" && aQuery.trim()){
+    const res = searchArchive(aQuery);
+    const folders = new Set(res.map(r => r.conv.folder));
+    hint.textContent = res.length
+      ? "Найдено " + res.length + " " + plural(res.length,"обращение","обращения","обращений") +
+        " в " + folders.size + " " + plural(folders.size,"папке","папках","папках") +
+        " · ищем по основам слов, склонение не мешает"
+      : "";
+
+    if(!res.length){
+      body.append(emptyState("По запросу «"+aQuery+"» в архиве ничего нет. Попробуйте другие слова — например «ключ», «арпс», «индексы». А если нужны цифры — переключитесь на «Спросить у базы»."));
+      return;
+    }
+
+    const rows = el("div","rows");
+    res.forEach(r => {
+      const c = r.conv;
+      const b = el("button","rrow");
+      b.type = "button";
+
+      const t = el("div","rt");
+      const l1 = el("div","l1");
+      l1.append(el("b",null,c.name), folderChips(c));
+      t.append(l1);
+
+      const topic = el("div","l1");
+      topic.style.marginTop = "5px";
+      const tp = el("span");
+      tp.style.fontSize = "12.5px";
+      tp.style.color = "var(--ink-3)";
+      tp.append(highlight(c.topic, r.terms));
+      topic.append(tp);
+      t.append(topic);
+
+      const q = el("div","q");
+      q.append(highlight(bestSnippet(c, r.terms), r.terms));
+      t.append(q);
+
+      const why = el("div","why");
+      r.hit.forEach(term => why.append(el("span","tag", term)));
+      if(r.hit.length) t.append(why);
+
+      const side = el("div","rside");
+      side.append(document.createTextNode(dateShort(lastMsg(c).ts)));
+      side.append(el("span","score", "совпадение " + Math.min(99, Math.round(r.score*4)) + "%"));
+
+      b.append(avatarBlock(c), t, side);
+      b.onclick = () => { goInbox(c.id); };
+      rows.append(b);
+    });
+    body.append(rows);
+    return;
+  }
+
+  /* --- один день из календаря --- */
+  if(calDay){
+    if(aMode === "find") hint.textContent = "";
+    const [y, mo, dd] = calDay.split("-").map(Number);
+    const crumb = el("div","crumb");
+    const back = el("button",null,"← Все папки");
+    back.type = "button";
+    back.onclick = () => { calDay = null; renderArchive(); };
+    crumb.append(back, el("span",null,"·"), el("span",null, dd + " " + MONTHS[mo-1] + " " + y));
+    body.append(crumb);
+    const items = archived.filter(c => dayKey(archivedAt(c)) === calDay).sort((a,b) => archivedAt(b) - archivedAt(a));
+    if(!items.length){ body.append(emptyState("В этот день в архив ничего не уходило")); return; }
+    const rows = el("div","rows");
+    items.forEach(c => rows.append(archiveRow(c)));
+    body.append(rows);
+    return;
+  }
+
+  /* --- содержимое раздела или темы --- */
+  if(openFolder){
+    if(aMode === "find") hint.textContent = "";
+    const g = GBY[openFolder] || (FBY[openFolder] && FBY[openFolder].g);
+    const f = FBY[openFolder];
+    const crumb = el("div","crumb");
+    const back = el("button",null,"← Все папки");
+    back.type = "button";
+    back.onclick = () => { openFolder = null; renderArchive(); };
+    crumb.append(back);
+    if(g){
+      crumb.append(el("span",null,"·"));
+      const gb = el("button",null,g.n);
+      gb.type = "button";
+      gb.onclick = () => { openFolder = g.k; renderArchive(); };
+      crumb.append(gb);
+    }
+    if(f && f !== UNDEF){ crumb.append(el("span",null,"›"), el("span",null,f.n)); }
+    if(openFolder === "undef") crumb.append(el("span",null,"·"), el("span",null,UNDEF.n));
+    body.append(crumb);
+
+    // Внутри раздела — его темы плитками, чтобы переключаться в один клик
+    if(g){
+      const tiles = el("div","ftiles inline");
+      tiles.style.setProperty("--fc", g.c);
+      g.kids.forEach(k => {
+        const t = folderTile(k, countIn(archived, k.k));
+        if(openFolder === k.k) t.setAttribute("aria-pressed","true");
+        t.onclick = () => { openFolder = openFolder === k.k ? g.k : k.k; renderArchive(); };
+        tiles.append(t);
+      });
+      body.append(tiles);
+    }
+
+    const items = archived.filter(c => inFolder(c, openFolder))
+                          .sort((a,b) => lastMsg(b).ts - lastMsg(a).ts);
+    if(!items.length){ body.append(emptyState("В этой папке пока пусто")); return; }
+    const rows = el("div","rows");
+    items.forEach(c => rows.append(archiveRow(c)));
+    body.append(rows);
+    return;
+  }
+
+  /* --- дерево папок --- */
+  if(aMode === "find"){
+    hint.textContent = "";
+    hint.append(document.createTextNode("Поиск идёт по всем папкам сразу. Попробуйте: "));
+    ["не видит ключ","выгрузка арпс","индексы","накопительная ведомость"].forEach((ex,i) => {
+      if(i) hint.append(document.createTextNode(" · "));
+      const code = el("code",null,ex);
+      code.onclick = () => { $("#aq").value = ex; aQuery = ex; renderArchive(); };
+      hint.append(code);
+    });
+  }
+
+  body.append(el("div","secttl","Папки"));
+  const pick = key => { openFolder = key; renderArchive(); };
+  body.append(folderTree(archived, pick));
+  body.append(undefTile(archived, pick, false));
+
+  body.append(el("div","secttl","Недавно убрано в архив"));
+  const rows = el("div","rows");
+  archived.slice().sort((a,b) => archivedAt(b) - archivedAt(a)).slice(0,4).forEach(c => rows.append(archiveRow(c)));
+  if(!archived.length) body.append(emptyState("Архив пока пуст"));
+  body.append(rows);
+}
+
+/* Все папки обращения: две чипами, остальные — «+N» */
+function folderChips(c){
+  const box = document.createDocumentFragment();
+  const list = foldersOf(c).map(k => FBY[k] || UNDEF);
+  (list.length ? list : [UNDEF]).slice(0,2).forEach(f => box.append(folderChip(f)));
+  if(list.length > 2){
+    const more = el("span","fchip more","+" + (list.length - 2));
+    more.title = list.slice(2).map(f => f.n).join(", ");
+    box.append(more);
+  }
+  return box;
+}
+function folderChip(f){
+  const fc = el("span","fchip");
+  const dot = el("i"); dot.style.background = f.c;
+  fc.append(dot, document.createTextNode(f.g ? f.g.n + " › " + f.n : f.n));
+  return fc;
+}
+
+function archiveRow(c){
+  const b = el("button","rrow");
+  b.type = "button";
+  const t = el("div","rt");
+  const l1 = el("div","l1");
+  l1.append(el("b",null,c.name), folderChips(c));
+  const topic = el("div","q");
+  topic.textContent = c.topic;
+  t.append(l1, topic);
+  const side = el("div","rside", dateShort(archivedAt(c)));
+  b.append(avatarBlock(c), t, side);
+  b.onclick = () => goInbox(c.id);
+  return b;
+}
+
+/* ================= база клиентов: экран ================= */
+const lastContact = cl => cl.convs.length
+  ? Math.max.apply(null, cl.convs.map(id => lastMsg(byId(id)).ts))
+  : (cl.lastTs || 0);
+
+function clientMatches(cl){
+  if(!cQuery) return true;
+  const q = cQuery.toLowerCase();
+  return (cl.name+" "+cl.un+" "+cl.org+" "+cl.lic+" "+cl.phone+" "+cl.product)
+         .toLowerCase().includes(q);
+}
+
+function clientAvatar(cl, size){
+  const wrap = el("div","avawrap");
+  const ava = el("div","ava", initials(cl.name));
+  ava.style.backgroundImage = "linear-gradient(145deg, color-mix(in srgb, "+cl.color+" 64%, #ffffff), "+cl.color+")";
+  const ch = el("span","ch "+cl.provider, cl.provider === "tg" ? "T" : "M");
+  ch.title = PROVIDER_L[cl.provider];
+  wrap.append(ava, ch);
+  if(size){ wrap.style.width = wrap.style.height = size+"px"; ava.style.width = ava.style.height = size+"px"; }
+  return wrap;
+}
+
+function renderClients(){
+  const body = $("#cliBody");
+  const hint = $("#cliHint");
+  body.textContent = "";
+  $("#cliClear").hidden = !cQuery;
+
+  /* ---- карточка одного клиента ---- */
+  if(openClient && CBY[openClient]){
+    const cl = CBY[openClient];
+    $("#cliTitle").textContent = cl.name;
+    $("#cliLead").textContent = cl.org;
+    $("#cliCount").textContent = cl.convs.length + " " + plural(cl.convs.length,"обращение","обращения","обращений");
+    $("#cliSearchBox").hidden = true;
+    hint.textContent = "";
+
+    const crumb = el("div","crumb");
+    const back = el("button",null,"← Все клиенты");
+    back.type = "button";
+    back.onclick = () => { openClient = null; renderClients(); };
+    crumb.append(back, el("span",null,"·"), el("span",null,cl.name));
+    body.append(crumb);
+
+    const grid = el("div","profile");
+
+    const card = el("div","pcard");
+    const top = el("div","top");
+    const who = el("div");
+    who.append(el("b",null,cl.name), el("span",null,cl.un + " · id " + cl.ext));
+    top.append(clientAvatar(cl, 56), who);
+    card.append(top);
+
+    const dl = el("dl","info");
+    const pair = (k,v,c2) => { dl.append(el("dt",null,k), el("dd", c2||null, v)); };
+    pair("Канал", PROVIDER_L[cl.provider]);
+    pair("Организация", cl.org);
+    pair("Ключ / лицензия", cl.lic, "mono");
+    pair("Телефон", cl.phone, "mono");
+    pair("Продукт", cl.product);
+    pair("Версия", cl.ver, "mono");
+    pair("Сопровождение", cl.support, cl.support.indexOf("нет") === 0 ? "due" : "mono");
+    const days = Math.round(cl.since/86400000);
+    pair("Клиент", days > 365
+      ? Math.floor(days/365)+" "+plural(Math.floor(days/365),"год","года","лет")
+      : days+" "+plural(days,"день","дня","дней"));
+    card.append(dl);
+
+    const ms = el("div","sect");
+    ms.append(el("h3",null,"Как разговаривать"));
+    const pm = el("div","pmoods");
+    MOODS.forEach(mo => {
+      const b = el("button","moodopt");
+      b.type = "button";
+      b.style.setProperty("--mc", mo.c);
+      b.dataset.mood = mo.k;
+      b.setAttribute("aria-pressed", String(cl.mood === mo.k));
+      const t = el("div");
+      t.append(el("b",null,mo.n), el("span",null,mo.hint));
+      b.append(el("i","mo"), t);
+      b.onclick = () => {
+        const next = cl.mood === mo.k ? "" : mo.k;
+        if(LIVE){
+          api("/api/clients/" + cl.cid + "/mood",
+              {method:"POST", body:JSON.stringify({mood:next})})
+            .then(scheduleRefresh)
+            .catch(e => console.warn("пометка не сохранилась:", e.message));
+          return;
+        }
+        cl.mood = next;
+        cl.moodAt = cl.mood ? Date.now() : 0;
+        cl.moodBy = cl.mood ? "Кирилл" : "";
+        saveMoods();
+        renderClients(); renderList();
+        if(clientOf(byId(activeId)) === cl){ renderThread(); renderCard(); }
+      };
+      pm.append(b);
+    });
+    ms.append(pm);
+    if(cl.moodAt){
+      const w = el("div","kv","пометил " + cl.moodBy + " · " + dateShort(cl.moodAt));
+      w.style.marginTop = "9px";
+      ms.append(w);
+    }
+    card.append(ms);
+    grid.append(card);
+
+    const right = el("div");
+    right.append(el("div","secttl","История обращений"));
+    const rows = el("div","rows");
+    cl.convs.map(byId).sort((a,b) => lastMsg(b).ts - lastMsg(a).ts).forEach(c => {
+      const b = el("button","rrow");
+      b.type = "button";
+      const t = el("div","rt");
+      const l1 = el("div","l1");
+      l1.append(el("span","badge "+c.status, STATUS_L[c.status]));
+      if(c.status === "archived") l1.append(folderChips(c));
+      t.append(l1, el("div","q", c.topic));
+      const side = el("div","rside", dateShort(lastMsg(c).ts));
+      b.append(clientAvatar(cl), t, side);
+      b.onclick = () => goInbox(c.id);
+      rows.append(b);
+    });
+    right.append(rows);
+    grid.append(right);
+
+    body.append(grid);
+    return;
+  }
+
+  /* ---- список всех клиентов ---- */
+  $("#cliTitle").textContent = "База клиентов";
+  $("#cliLead").textContent = "Кто обращался, с чем и как с ними разговаривать";
+  $("#cliSearchBox").hidden = false;
+
+  const list = clients.filter(clientMatches).sort((a,b) => lastContact(b) - lastContact(a));
+  const marked = clients.filter(c => c.mood).length;
+  $("#cliCount").textContent = clients.length + " " + plural(clients.length,"клиент","клиента","клиентов");
+  hint.textContent = "Помечено " + marked + " из " + clients.length +
+                     " · пометка ставится при отправке обращения в архив";
+
+  if(!list.length){ body.append(emptyState("По запросу «"+cQuery+"» никого нет")); return; }
+
+  const table = el("div","ctable");
+  list.forEach(cl => {
+    const b = el("button","crow");
+    b.type = "button";
+
+    const c1 = el("div","c1");
+    c1.append(el("b",null,cl.name), el("span",null,cl.org));
+
+    const c2 = el("div","c2");
+    const chip = moodChip(cl.mood);
+    if(chip) c2.append(chip);
+    else {
+      const none = el("span","tag","без пометки");
+      none.style.borderStyle = "dashed";
+      c2.append(none);
+    }
+    c2.append(el("span","kv", cl.lic + " · " + cl.phone));
+
+    const c3 = el("div","c3");
+    if(cl.convs.length){
+      c3.append(el("b",null,String(cl.convs.length)),
+                document.createTextNode(plural(cl.convs.length,"обращение","обращения","обращений")));
+    } else {
+      c3.append(el("b",null,"—"), document.createTextNode("заполняет анкету"));
+    }
+    const when = el("div"); when.textContent = dateShort(lastContact(cl));
+    when.style.marginTop = "4px";
+    c3.append(when);
+
+    b.append(clientAvatar(cl, 50), c1, c2, c3);
+    b.onclick = () => { openClient = cl.id; renderClients(); };
+    table.append(b);
+  });
+  body.append(table);
+}
+
+/* ================= навигация ================= */
+function setSection(name){
+  section = name;
+  $("#viewInbox").classList.toggle("on", name === "inbox");
+  $("#viewClients").classList.toggle("on", name === "clients");
+  $("#viewArchive").classList.toggle("on", name === "archive");
+  $("#navInbox").setAttribute("aria-pressed", String(name === "inbox"));
+  $("#navClients").setAttribute("aria-pressed", String(name === "clients"));
+  $("#navArchive").setAttribute("aria-pressed", String(name === "archive"));
+  if(name === "archive") renderArchive();
+  if(name === "clients") renderClients();
+}
+function goInbox(id){
+  setSection("inbox");
+  openConv(id);
+}
+function openConv(id){
+  activeId = id;
+  chatClosed = false;
+  const c = byId(id);
+  if(c) c.unread = 0;
+  $("#inbox").dataset.view = "thread";
+  renderList(); renderThread(); renderCard();
+
+  // В живом режиме переписка подтягивается только при открытии —
+  // грузить историю всех диалогов сразу незачем
+  if(LIVE && c && !c.loaded){
+    loadMessages(c)
+      .then(() => api("/api/conversations/" + c.sid,
+                      {method:"PATCH", body:JSON.stringify({unread:0})}))
+      .then(() => { if(activeId === id){ renderThread(); renderList(); } })
+      .catch(e => console.warn("не удалось загрузить переписку:", e.message));
+  }
+}
+
+/* ================= действия ================= */
+function pushMsg(c, msg){ msg.id = c.id+"-"+(++c.seq); c.msgs.push(msg); }
+
+function send(){
+  const inp = $("#input");
+  const text = inp.value.trim();
+  const c = byId(activeId);
+  if(!text || !c) return;
+
+  if(LIVE){
+    inp.value = ""; inp.style.height = "auto";
+    $("#sendBtn").disabled = true;
+    api("/api/conversations/" + c.sid + "/reply", {method:"POST", body:JSON.stringify({text:text})})
+      .then(scheduleRefresh)
+      .catch(e => {
+        // Ответ не ушёл — оператор должен это увидеть, а не гадать
+        pushMsg(c, {dir:"sys", t:"Не отправлено: " + e.message, ts:Date.now()});
+        renderThread();
+      });
+    return;
+  }
+
+  pushMsg(c, {dir:"out", t:text, ts:Date.now(), st:"sent"});
+  inp.value = ""; inp.style.height = "auto";
+  $("#sendBtn").disabled = true;
+
+  if(c.status === "new"){
+    c.status = "open"; c.assignee = "Кирилл";
+    pushMsg(c, {dir:"sys", t:"Обращение взято в работу: Кирилл", ts:Date.now()});
+  }
+  renderThread(); renderList(); renderCard(); renderFilters();
+
+  const sent = c.msgs.filter(x => x.dir === "out").slice(-1)[0];
+  setTimeout(() => { sent.st = "delivered"; if(activeId === c.id) renderThread(); }, 900);
+  setTimeout(() => { sent.st = "read"; if(activeId === c.id) renderThread(); }, 2600);
+}
+
+const REPLIES = [
+  "Спасибо, помогло! Программа запустилась.",
+  "А счёт на юрлицо можете выставить?",
+  "Хорошо, жду. Когда примерно ответите?",
+  "Понял вас, попробую и отпишусь.",
+  "Отправил файл на почту, проверьте, пожалуйста."
+];
+
+function simulateIncoming(conv){
+  const pool = convs.filter(c => c.status !== "archived");
+  const c = conv || pool[Math.floor(Math.random()*pool.length)];
+  if(!c) return;
+  c.pres = {state:"in", since:Date.now(), typing:true};
+  typingIn = c.id;
+  if(activeId === c.id && section === "inbox") renderThread();
+  tickPresence();
+  setTimeout(() => {
+    typingIn = null;
+    c.pres.typing = false;
+    pushMsg(c, {dir:"in", t:REPLIES[Math.floor(Math.random()*REPLIES.length)], ts:Date.now()});
+    if(c.status === "waiting") c.status = "open";
+    if(activeId !== c.id) c.unread++;
+    renderList(); renderFilters();
+    if(activeId === c.id){ renderThread(); renderCard(); }
+  }, 1500);
+}
+
+function shufflePresence(){
+  const pool = convs.filter(c => c.status !== "archived" && c.status !== "closed");
+  if(!pool.length) return;
+  const c = pool[Math.floor(Math.random()*pool.length)];
+  const r = Math.random();
+  if(r < 0.34)      c.pres = {state:"in", since:Date.now(), typing:false};
+  else if(r < 0.67) c.pres = {state:"in", since:Date.now()-m(7), typing:true};
+  else              c.pres = {state:"left", since:Date.now()-m(9), typing:false};
+  tickPresence();
+}
+
+/* ================= окно выбора папки =================
+   То же дерево, что в разделе «Архив»: раздел сверху, его темы плитками.
+   Оператор узнаёт папку по месту и цвету, а не читает список. */
+function renderFolderList(){
+  const box = $("#folderList");
+  const q = $("#mSearch").value.trim();
+  box.textContent = "";
+  const archived = convs.filter(c => c.status === "archived");
+  // Клик по теме добавляет её к выбору, повторный — убирает.
+  // «Не определённая тема» — только сама по себе.
+  const pick = key => {
+    if(GBY[key]) return;
+    if(key === "undef") pendingFolders = pendingFolders.includes("undef") ? [] : ["undef"];
+    else {
+      pendingFolders = pendingFolders.filter(k => k !== "undef");
+      pendingFolders = pendingFolders.includes(key)
+        ? pendingFolders.filter(k => k !== key)
+        : pendingFolders.concat([key]);
+    }
+    $("#mOk").disabled = !pendingFolders.length;
+    renderFolderList();
+  };
+  box.append(folderTree(archived, pick, {compact:true, filter:q, selected:pendingFolders}));
+  box.append(el("div","fdivide","если ничего не подходит"));
+  box.append(undefTile(archived, pick, pendingFolders.includes("undef")));
+  const names = pendingFolders.map(k => FBY[k] ? FBY[k].n : k);
+  $("#mPicked").textContent = !names.length ? "Можно выбрать несколько папок"
+    : (names.length === 1 ? "Папка: " : "Папок: " + names.length + " — ") + names.join(", ");
+  $("#mPicked").title = names.join(", ");
+}
+
+function renderMoodList(){
+  const box = $("#moodList");
+  box.textContent = "";
+  MOODS.forEach(mo => {
+    const b = el("button","moodopt");
+    b.type = "button";
+    b.style.setProperty("--mc", mo.c);
+    b.dataset.mood = mo.k;
+    b.setAttribute("aria-pressed", String(pendingMood === mo.k));
+    b.title = mo.hint;
+    const t = el("div");
+    t.append(el("b",null,mo.n), el("span",null,mo.hint));
+    b.append(el("i","mo"), t);
+    b.onclick = () => { pendingMood = pendingMood === mo.k ? null : mo.k; renderMoodList(); };
+    box.append(b);
+  });
+}
+
+function openArchiveModal(){
+  const c = byId(activeId);
+  if(!c) return;
+  const cl = clientOf(c);
+  pendingMood = cl ? (cl.mood || null) : null;
+  renderMoodList();
+  pendingFolders = foldersOf(c).slice();
+  $("#mSub").textContent = c.status === "archived"
+    ? "Обращение уже в архиве. Отметьте другие папки, если тема определилась точнее."
+    : "«"+c.topic+"» уйдёт в архив. Отметьте все подходящие темы — можно несколько.";
+  $("#mSearch").value = "";
+  $("#mOk").disabled = !pendingFolders.length;
+  $("#mOk").textContent = c.status === "archived" ? "Переместить" : "Отправить в архив";
+  $("#archiveModal").hidden = false;
+  renderFolderList();
+  setTimeout(() => $("#mSearch").focus(), 30);
+}
+function closeArchiveModal(){
+  $("#archiveModal").hidden = true;
+  pendingFolders = [];
+  const c = byId(activeId);
+  if(c) $("#statusSel").value = c.status;
+}
+function confirmArchive(){
+  const c = byId(activeId);
+  if(!c || !pendingFolders.length) return;
+  const picked = pendingFolders.slice();
+
+  if(LIVE){
+    const mood = pendingMood || "";
+    api("/api/conversations/" + c.sid + "/archive",
+        {method:"POST", body:JSON.stringify({folders:picked, mood:mood})})
+      .then(() => { closeArchiveModal(); scheduleRefresh(); })
+      .catch(e => {
+        closeArchiveModal();
+        pushMsg(c, {dir:"sys", t:"Не удалось убрать в архив: " + e.message, ts:Date.now()});
+        renderThread();
+      });
+    return;
+  }
+  const was = c.status === "archived";
+  c.status = "archived"; c.folders = picked; c.folder = picked[0]; c.unread = 0;
+  const names = picked.map(k => "«" + FBY[k].n + "»").join(", ");
+  pushMsg(c, {dir:"sys", t:(was ? "Папки изменены → " : "Обращение отправлено в архив → " +
+                                  (picked.length > 1 ? "папки " : "папка ")) + names, ts:Date.now()});
+
+  // Пометка ставится человеку и остаётся с ним после закрытия обращения
+  const cl = clientOf(c);
+  if(cl && pendingMood !== (cl.mood || null)){
+    cl.mood = pendingMood || "";
+    cl.moodAt = pendingMood ? Date.now() : 0;
+    cl.moodBy = pendingMood ? "Кирилл" : "";
+    saveMoods();
+    pushMsg(c, {dir:"sys",
+      t: pendingMood ? "Клиент помечен: " + MBY[pendingMood].n.toLowerCase()
+                     : "Пометка о клиенте снята",
+      ts:Date.now()});
+  }
+
+  closeArchiveModal();
+  renderFilters(); renderList(); renderThread(); renderCard();
+  if(section === "archive") renderArchive();
+  if(section === "clients") renderClients();
+}
+
+/* ================= окно сценария анкеты ================= */
+function renderScript(){
+  const box = $("#scriptBox");
+  box.textContent = "";
+  let n = 0;
+  INTAKE_SCRIPT.forEach(s => {
+    const step = el("div","sstep" + (s.who === "client" ? " client" : ""));
+    step.append(el("span","snum", s.who === "client" ? "К" : String(++n)));
+    const bub = el("div","sbub", s.q);
+    if(s.b){
+      const row = el("div","sbtns");
+      s.b.forEach(t => row.append(el("span","sbtn", t)));
+      bub.append(row);
+    }
+    if(s.a){
+      const ans = el("div","ans");
+      ans.append(document.createTextNode("клиент: "), el("b",null,s.a));
+      bub.append(ans);
+    }
+    step.append(bub);
+    box.append(step);
+  });
+}
+
+/* ================= прикреплённый файл ================= */
+let pendingFile = null;
+
+function humanSize(n){
+  if(n < 1024) return n + " Б";
+  if(n < 1024*1024) return Math.round(n/1024) + " КБ";
+  return (n/1024/1024).toFixed(1).replace(".", ",") + " МБ";
+}
+
+function renderPending(){
+  const box = $("#pendingFile");
+  box.textContent = "";
+  if(!pendingFile){ box.hidden = true; return; }
+  box.hidden = false;
+
+  if(/^image\//.test(pendingFile.type)){
+    const img = document.createElement("img");
+    img.className = "thumb";
+    img.src = URL.createObjectURL(pendingFile);
+    img.onload = () => URL.revokeObjectURL(img.src);
+    box.append(img);
+  }
+  box.append(el("span","pn", pendingFile.name), el("span","ps", humanSize(pendingFile.size)));
+
+  const x = el("button","px","×");
+  x.type = "button";
+  x.title = "Убрать файл";
+  x.onclick = () => { pendingFile = null; $("#fileInput").value = ""; renderPending(); syncSend(); };
+  box.append(x);
+}
+
+function syncSend(){
+  const inp = $("#input");
+  $("#sendBtn").disabled = !inp.value.trim() && !pendingFile;
+  $("#sendBtn").textContent = pendingFile ? "Отправить" : "Ответить";
+}
+
+function sendFile(){
+  const c = byId(activeId);
+  if(!c || !pendingFile) return;
+  const caption = $("#input").value.trim();
+
+  if(!LIVE){
+    pushMsg(c, {dir:"out", ts:Date.now(), st:"sent", t:caption,
+                att:{n:pendingFile.name, s:humanSize(pendingFile.size), k:"ФАЙЛ",
+                     url:"", kind:/^image\//.test(pendingFile.type) ? "image" : "file"}});
+    pendingFile = null; $("#fileInput").value = ""; $("#input").value = "";
+    renderPending(); syncSend(); renderThread(); renderList();
+    return;
+  }
+
+  const form = new FormData();
+  form.append("file", pendingFile);
+  form.append("caption", caption);
+  $("#pendingFile").classList.add("sending");
+
+  fetch("/api/conversations/" + c.sid + "/attach", {method:"POST", body:form})
+    .then(async r => {
+      if(!r.ok){
+        let detail = "HTTP " + r.status;
+        try{ detail = (await r.json()).detail || detail; }catch(e){}
+        throw new Error(detail);
+      }
+      pendingFile = null;
+      $("#fileInput").value = "";
+      $("#input").value = "";
+      $("#input").style.height = "auto";
+      scheduleRefresh();
+    })
+    .catch(e => {
+      pushMsg(c, {dir:"sys", t:"Файл не отправлен: " + e.message, ts:Date.now()});
+      renderThread();
+    })
+    .finally(() => {
+      $("#pendingFile").classList.remove("sending");
+      renderPending(); syncSend();
+    });
+}
+
+/* ================= удаление обращения ================= */
+function openDeleteModal(){
+  const c = byId(activeId);
+  if(!c) return;
+
+  const box = $("#dBody");
+  box.textContent = "";
+  const row = (k, v) => {
+    const d = el("div","drow");
+    d.append(el("dt",null,k), el("dd",null,v));
+    box.append(d);
+  };
+  row("Клиент", c.name);
+  row("Тема", c.topic || "без темы");
+  row("Папки", foldersOf(c).map(k => FBY[k] ? FBY[k].n : k).join(", ") || "—");
+
+  const real = c.msgs.filter(m => !m.partial);
+  row("Сообщений", LIVE && !c.loaded ? "загружаю…" : String(real.length));
+  row("Вложений", String(real.filter(m => m.att).length));
+
+  $("#deleteModal").hidden = false;
+
+  // В живом режиме цифры берём у бэкенда — он считает по базе, а не по загруженному
+  if(LIVE){
+    api("/api/conversations/" + c.sid + "/summary")
+      .then(s => {
+        box.textContent = "";
+        row("Клиент", s.display_name);
+        row("Тема", s.topic || "без темы");
+        let sf = [];
+        try{ sf = JSON.parse(s.folders || "[]"); }catch(e){}
+        if(!sf.length && s.folder) sf = [s.folder];
+        row("Папки", sf.map(k => FBY[k] ? FBY[k].n : k).join(", ") || "—");
+        row("Сообщений", String(s.messages));
+        row("Вложений", String(s.files));
+      })
+      .catch(e => console.warn("сводка не получена:", e.message));
+  }
+}
+
+function closeDeleteModal(){ $("#deleteModal").hidden = true; }
+
+function confirmDelete(){
+  const c = byId(activeId);
+  if(!c) return;
+
+  if(!LIVE){
+    const i = convs.indexOf(c);
+    if(i >= 0) convs.splice(i, 1);
+    const cl = CBY[c.client];
+    if(cl) cl.convs = cl.convs.filter(id => id !== c.id);
+    activeId = convs.length ? convs[0].id : null;
+    closeDeleteModal();
+    renderFilters(); renderList(); renderThread(); renderCard();
+    if(section === "archive") renderArchive();
+    if(section === "clients") renderClients();
+    return;
+  }
+
+  api("/api/conversations/" + c.sid, {method:"DELETE"})
+    .then(() => {
+      activeId = null;
+      closeDeleteModal();
+      scheduleRefresh();
+      if(section === "inbox") setSection("archive");
+    })
+    .catch(e => {
+      closeDeleteModal();
+      pushMsg(c, {dir:"sys", t:"Не удалось удалить: " + e.message, ts:Date.now()});
+      renderThread();
+    });
+}
+
+/* ================= привязки ================= */
+const input = $("#input");
+input.addEventListener("input", () => {
+  syncSend();
+  input.style.height = "auto";
+  input.style.height = Math.min(input.scrollHeight, 150)+"px";
+});
+function submit(){ if(pendingFile) sendFile(); else send(); }
+input.addEventListener("keydown", e => { if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); submit(); } });
+$("#sendBtn").onclick = submit;
+
+$("#fileBtn").onclick = () => $("#fileInput").click();
+$("#fileInput").addEventListener("change", e => {
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  if(f.size > 20 * 1024 * 1024){
+    alert("Файл больше 20 МБ — столько мессенджер не примет.");
+    e.target.value = "";
+    return;
+  }
+  pendingFile = f;
+  renderPending(); syncSend(); input.focus();
+});
+
+$("#deleteBtn").onclick = openDeleteModal;
+$("#dClose").onclick = closeDeleteModal;
+$("#dCancel").onclick = closeDeleteModal;
+$("#dOk").onclick = confirmDelete;
+$("#deleteModal").addEventListener("click", e => { if(e.target.id === "deleteModal") closeDeleteModal(); });
+$("#q").addEventListener("input", e => { query = e.target.value.trim(); renderList(); });
+
+$("#statusSel").onchange = e => {
+  const c = byId(activeId);
+  if(!c) return;
+  if(e.target.value === "archived"){ openArchiveModal(); return; }
+  if(LIVE){
+    api("/api/conversations/" + c.sid, {method:"PATCH", body:JSON.stringify({status:e.target.value})})
+      .then(scheduleRefresh)
+      .catch(err => console.warn("статус не сохранился:", err.message));
+    return;
+  }
+  c.status = e.target.value;
+  c.folder = ""; c.folders = [];
+  pushMsg(c, {dir:"sys", t:"Статус изменён: "+STATUS_L[c.status], ts:Date.now()});
+  renderFilters(); renderList(); renderThread(); renderCard();
+};
+
+$("#archiveBtn").onclick = openArchiveModal;
+$("#mClose").onclick = closeArchiveModal;
+$("#mCancel").onclick = closeArchiveModal;
+$("#mOk").onclick = confirmArchive;
+$("#mSearch").addEventListener("input", renderFolderList);
+$("#archiveModal").addEventListener("click", e => { if(e.target.id === "archiveModal") closeArchiveModal(); });
+
+$("#navInbox").onclick = () => setSection("inbox");
+$("#navClients").onclick = () => { openClient = null; setSection("clients"); };
+$("#navArchive").onclick = () => { openFolder = null; setSection("archive"); };
+$("#cliQ").addEventListener("input", e => { cQuery = e.target.value.trim(); renderClients(); });
+$("#cliClear").onclick = () => { $("#cliQ").value = ""; cQuery = ""; renderClients(); $("#cliQ").focus(); };
+$("#navIntake").onclick = () => { renderScript(); $("#intakeModal").hidden = false; };
+$("#iClose").onclick = () => { $("#intakeModal").hidden = true; };
+$("#iOk").onclick = () => { $("#intakeModal").hidden = true; };
+$("#intakeModal").addEventListener("click", e => { if(e.target.id === "intakeModal") $("#intakeModal").hidden = true; });
+
+$("#aq").addEventListener("input", e => {
+  aQuery = e.target.value;
+  // Вопрос «сколько…» — это про цифры, а не про поиск обращения
+  if(aMode === "find" && ASK_RX.test(aQuery)){ setMode("ask"); return; }
+  if(aMode === "find") renderArchive();
+  else $("#aClear").hidden = !aQuery;
+});
+$("#aq").addEventListener("keydown", e => {
+  if(e.key === "Enter" && aMode === "ask"){ e.preventDefault(); runAsk(aQuery); }
+});
+$("#aClear").onclick = () => { $("#aq").value = ""; aQuery = ""; askState = null; renderArchive(); $("#aq").focus(); };
+$("#modeFind").onclick = () => { if(aMode !== "find"){ setMode("find"); $("#aq").focus(); } };
+$("#modeAsk").onclick = () => { if(aMode !== "ask"){ setMode("ask"); $("#aq").focus(); } };
+
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape"){
+    const modalOpen = !$("#archiveModal").hidden || !$("#intakeModal").hidden || !$("#deleteModal").hidden;
+    if(!modalOpen && $("#calBox").hidden && section === "inbox" && activeId &&
+       document.activeElement !== $("#input")) closeChat();
+    if(!$("#archiveModal").hidden) closeArchiveModal();
+    if(!$("#intakeModal").hidden) $("#intakeModal").hidden = true;
+    if(!$("#deleteModal").hidden) closeDeleteModal();
+    return;
+  }
+  if(!$("#archiveModal").hidden && e.key === "Enter" && pendingFolders.length &&
+     document.activeElement !== $("#mSearch")) confirmArchive();
+});
+
+$("#backBtn").onclick = closeChat;
+$("#cardBtn").onclick = () => {
+  const box = $("#inbox");
+  box.dataset.card = box.dataset.card === "open" ? "" : "open";
+};
+$("#simBtn").onclick = () => simulateIncoming(byId(activeId));
+
+const tplMenu = $("#tplMenu");
+TEMPLATES.forEach(t => {
+  const b = el("button");
+  b.type = "button";
+  b.append(el("b",null,t.t), document.createTextNode(t.v.slice(0,74)+"…"));
+  b.onclick = () => { input.value = t.v; tplMenu.hidden = true; input.dispatchEvent(new Event("input")); input.focus(); };
+  tplMenu.append(b);
+});
+$("#tplBtn").onclick = e => { e.stopPropagation(); tplMenu.hidden = !tplMenu.hidden; };
+document.addEventListener("click", e => { if(!tplMenu.hidden && !tplMenu.contains(e.target)) tplMenu.hidden = true; });
+
+$("#themeBtn").onclick = () => {
+  const cur = document.documentElement.getAttribute("data-theme");
+  const dark = cur ? cur === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  const next = dark ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  store.set("theme", next);
+};
+const saved = store.get("theme", null);
+if(saved) document.documentElement.setAttribute("data-theme", saved);
+
+/* ================= старт ================= */
+if(innerWidth > 820) $("#inbox").dataset.view = "thread";
+
+// Страницу отдал сервер — демо-обращения не показываем ни на миг,
+// иначе оператор путает их с настоящими, пока грузится база
+if(window.TP_SERVER){
+  convs.length = 0;
+  clients.length = 0;
+  Object.keys(CBY).forEach(k => delete CBY[k]);
+  activeId = null;
+  $("#demoTag").textContent = "подключаюсь…";
+}
+renderFilters(); renderList(); renderThread(); renderCard();
+
+setInterval(tickPresence, 5000);
+
+liveBoot().then(live => {
+  if(live) return;
+  // Бэкенда рядом нет — страница работает как самостоятельное демо
+  $("#simBtn").hidden = false;
+  setInterval(shufflePresence, 11000);
+  setInterval(() => { if(!document.hidden) simulateIncoming(); }, 45000);
+});
+
+})();
+</script>

@@ -1,0 +1,18 @@
+# Секреты: токены ботов и пароль входа
+backend/.env
+
+# Данные клиентов — персональные данные, в репозиторий нельзя
+backend/*.db
+backend/*.db-shm
+backend/*.db-wal
+backend/media/
+
+# Окружение и служебное
+backend/.venv/
+__pycache__/
+*.pyc
+backend/last_link.txt
+backend/tunnel.log
+
+# Внутренние заметки: адреса домашней сети и доступы
+СОСТОЯНИЕ-ПРОЕКТА.md
