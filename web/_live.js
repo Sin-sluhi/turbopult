@@ -152,6 +152,8 @@ function openStream(){
     ["message","conversation","client","presence"].forEach(kind => {
       stream.addEventListener(kind, scheduleRefresh);
     });
+    // Кто-то поменял разделы формы или фото — подтягиваем у всех
+    stream.addEventListener("service", sfLoadConfig);
     // EventSource переподключается сам; после обрыва перечитываем всё —
     // пока связи не было, события могли пройти мимо
     let broken = false;

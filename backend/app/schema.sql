@@ -72,7 +72,16 @@ CREATE TABLE IF NOT EXISTS service_forms (
   name         TEXT    NOT NULL DEFAULT '',
   comment      TEXT    NOT NULL DEFAULT '',
   questions    TEXT    NOT NULL DEFAULT '',
+  mood         TEXT    NOT NULL DEFAULT '',   -- каким был клиент (ключи через запятую); только в пульте
   sent         INTEGER NOT NULL DEFAULT 0,
   sent_at      INTEGER NOT NULL DEFAULT 0,
   error        TEXT    NOT NULL DEFAULT ''
+);
+
+-- Настройки, общие для всех операторов: темы сервисной формы,
+-- фото сотрудников. value — JSON или строка.
+CREATE TABLE IF NOT EXISTS settings (
+  key        TEXT PRIMARY KEY,
+  value      TEXT    NOT NULL,
+  updated_at INTEGER NOT NULL
 );

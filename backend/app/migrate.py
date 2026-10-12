@@ -7,6 +7,10 @@ import sqlite3
 from . import folders
 
 COLUMNS = {
+    "service_forms": [
+        # каким был клиент — пометка для «Итогов», в Google Таблицу не уходит
+        ("mood", "TEXT NOT NULL DEFAULT ''"),
+    ],
     "contacts": [
         ("mood", "TEXT NOT NULL DEFAULT ''"),
         ("mood_at", "INTEGER NOT NULL DEFAULT 0"),

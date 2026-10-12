@@ -4,10 +4,10 @@ import logging
 from pathlib import Path
 
 from fastapi import Body, FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import access, adapters, analytics, config, core, db, events, folders, moods, polling, search, service, storage
+from . import access, adapters, analytics, config, core, db, events, folders, gge, moods, polling, search, service, storage
 
 app = FastAPI(title="Турбопульт", docs_url="/api/docs")
 
@@ -113,6 +113,19 @@ def health():
         "channels": {name: a.is_configured() for name, a in adapters.ADAPTERS.items()},
         "ask_engine": "claude" if analytics.claude_ready() else "local",
     }
+
+
+@app.get("/favicon.ico")
+def favicon_ico():
+    """Значок вкладки — браузеры запрашивают его сами по этому адресу."""
+    return FileResponse(WEB_DIR / "favicon.ico", media_type="image/x-icon",
+                        headers={"Cache-Control": "public, max-age=86400"})
+
+
+@app.get("/favicon.png")
+def favicon_png():
+    return FileResponse(WEB_DIR / "favicon.png", media_type="image/png",
+                        headers={"Cache-Control": "public, max-age=86400"})
 
 
 @app.get("/tp-ping")
@@ -293,6 +306,46 @@ async def service_form_create(payload: dict = Body(...)):
     return form
 
 
+@app.post("/api/gge/check")
+async def gge_check(file: UploadFile = File(...), slot: str = Form("")):
+    """Смета -> checkxml.gge.ru -> ошибки с объяснением, что нажать в Турбосметчике."""
+    data = await file.read()
+    try:
+        return await gge.check(data, file.filename or "smeta.xml", slot)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@app.get("/api/service-config")
+def service_config():
+    """Темы сервисной формы и фото сотрудников."""
+    return service.get_config()
+
+
+@app.put("/api/service-config/topics")
+def service_topics(payload: dict = Body(...)):
+    """Сохраняет разделы и пункты формы. groups: null — вернуть стандартные."""
+    try:
+        service.save_topics(payload.get("groups"))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    events.publish("service", {"topics": True})
+    return service.get_config()
+
+
+@app.put("/api/service-config/avatar")
+def service_avatar(payload: dict = Body(...)):
+    """Фото сотрудника (data:image/...;base64). Пустая строка убирает фото."""
+    try:
+        cfg = service.save_avatar(payload.get("employee"), payload.get("image") or "")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    events.publish("service", {"avatar": payload.get("employee")})
+    return cfg
+
+
 @app.post("/api/service-forms/{form_id}/send")
 async def service_form_resend(form_id: int):
     """Повторная отправка в таблицу записи, которая не ушла."""
@@ -362,6 +415,7 @@ def index():
             '<!doctype html>\n<html lang="ru">\n<head>\n'
             '<meta charset="utf-8">\n'
             '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+            '<link rel="icon" type="image/png" href="/favicon.png">\n'
             '</head>\n<body>\n' + page + '\n</body>\n</html>'
         )
     # Не кэшировать: после обновления пульта у коллег должна открыться новая версия

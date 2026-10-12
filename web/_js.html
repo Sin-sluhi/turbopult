@@ -578,6 +578,18 @@ function matches(c){
           c.msgs.map(x => x.t).join(" ")).toLowerCase().includes(q);
 }
 
+const statPrev = {};
+// Цифра «досчитывает» до нового значения за полсекунды
+function countUp(node, from, to){
+  if(from === to || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const t0 = performance.now(), dur = 520;
+  const step = now => {
+    const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    node.textContent = String(Math.round(from + (to - from) * e));
+    if(k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
 function renderStats(){
   const box = $("#stats");
   box.textContent = "";
@@ -586,12 +598,15 @@ function renderStats(){
   const live = convs.filter(c => c.status !== "archived" && presence(c).k !== "red").length;
   const add = (cls, n, label) => {
     const s = el("div","stat"+(cls?" "+cls:""));
-    s.append(el("b",null,String(n)), el("span",null,label));
+    const b = el("b",null,String(n));
+    s.append(b, el("span",null,label));
     box.append(s);
+    countUp(b, statPrev[label] || 0, n);
+    statPrev[label] = n;
   };
   add("", active, "в работе");
   add("hot", hot, "без ответа");
-  add("live", live, "в чате");
+  add("inchat", live, "в чате");
   const badge = $("#inboxBadge");
   badge.textContent = String(hot);
   badge.hidden = hot === 0;
@@ -737,6 +752,7 @@ function attachment(att){
   return box;
 }
 
+const seenMsgs = new Map();
 function renderThread(){
   const c = byId(activeId);
   const box = $("#msgs");
@@ -775,12 +791,16 @@ function renderThread(){
   if(c.intake) box.append(intakeCard(c));
 
   let lastDay = "", lastDir = "";
+  // всплывают только сообщения, которых в этом окне ещё не было
+  const seen = seenMsgs.get(c.id);
+  const fresh = new Set();
   c.msgs.forEach(msg => {
     const dl = dayLabel(msg.ts);
     if(dl !== lastDay){ box.append(el("div","daysep", dl)); lastDay = dl; lastDir = ""; }
     if(msg.dir === "sys"){ box.append(el("div","sys", msg.t)); lastDir = ""; return; }
 
-    const wrap = el("div","m "+msg.dir+(msg.dir !== lastDir ? " first" : ""));
+    const wrap = el("div","m "+msg.dir+(msg.dir !== lastDir ? " first" : "")+(seen && !seen.has(msg.id) ? " new" : ""));
+    fresh.add(msg.id);
     if(msg.t) wrap.append(el("div","bub", msg.t));
     if(msg.att) wrap.append(attachment(msg.att));
     const meta = el("div","meta");
@@ -793,6 +813,7 @@ function renderThread(){
     box.append(wrap);
     lastDir = msg.dir;
   });
+  seenMsgs.set(c.id, fresh);
 
   if(typingIn === c.id){
     const t = el("div","typing");
@@ -945,8 +966,16 @@ function renderIdle(){
     orb.type = "button";
     orb.title = "Следующий совет";
     orb.setAttribute("aria-label","Следующий совет");
-    orb.append(el("i"), el("i"), el("i"));
-    orb.onclick = () => { tipIdx = (tipIdx + 1) % TIPS.length; renderIdle(); };
+    const core = el("i","o-core");
+    core.append(el("i","o-shine"), el("i","o-hl"));
+    const orbit = cls => { const o = el("i","o-orbit " + cls); o.append(el("b")); return o; };
+    orb.append(el("i","o-halo"), el("i","o-wave"), el("i","o-wave w2"),
+               el("i","o-ring r1"), el("i","o-ring r2"),
+               orbit("s1"), orbit("s2"), orbit("s3"), core, el("i","o-flash"));
+    orb.onclick = () => {
+      orb.classList.remove("pop"); void orb.offsetWidth; orb.classList.add("pop");
+      tipIdx = (tipIdx + 1) % TIPS.length; renderIdle();
+    };
     wrap.append(orb, el("div","idlelive"));
     box.append(wrap);
   }
@@ -1783,7 +1812,11 @@ function renderClients(){
   hint.textContent = "Помечено " + marked + " из " + clients.length +
                      " · пометка ставится при отправке обращения в архив";
 
-  if(!list.length){ body.append(emptyState("По запросу «"+cQuery+"» никого нет")); return; }
+  if(!list.length){
+    body.append(emptyState(cQuery ? "По запросу «"+cQuery+"» никого нет"
+      : "Пока нет ни одного клиента — они появятся, когда напишут боту"));
+    return;
+  }
 
   const table = el("div","ctable" + (cliSelecting ? " selecting" : ""));
   list.forEach(cl => {
@@ -1950,8 +1983,6 @@ const SF_SHEET = {
   method:"Вопрос по методике", consult:"Консультация", market:"Конъюнктурный анализ",
   nmck:"НМЦК Смета контракта", finderr:"Поиск ошибки в смете"
 };
-const SF_KEY = {};
-Object.keys(SF_SHEET).forEach(k => { SF_KEY[SF_SHEET[k]] = k; });
 const SF_FIELDS = ["serial","workplace","organization","subscription","phone","name","comment"];
 
 let sfTab = "fill";
@@ -1960,8 +1991,40 @@ let sfLoaded = false;
 let sfLogQ = "";
 let sfLogEmp = "";
 let sfEmployee = store.get("sfEmployee", "");
+let sfMood = [];   // каким был клиент — сколько угодно пометок
 
-const sfTopicColor = t => (FBY[SF_KEY[t]] || {}).c || "var(--ink-3)";
+// Разделы и пункты формы. Пока их не меняли — стандартные, из дерева архива.
+// Пункт: n — надпись на кнопке, t — слова, которые уйдут в таблицу.
+function sfDefaultGroups(){
+  return GROUPS.map(g => ({k:g.k, n:g.n, c:g.c,
+    items: g.kids.map(f => ({k:f.k, n:f.n, t:SF_SHEET[f.k] || f.n}))}));
+}
+let sfGroups = sfDefaultGroups();
+let sfAvatars = {};
+let sfCfgLoaded = false;
+const sfFind = t => { for(const g of sfGroups) for(const it of g.items) if(it.t === t) return {g:g, it:it}; return null; };
+const sfTopicColor = t => { const x = sfFind(t); return x ? x.g.c : "var(--ink-3)"; };
+
+async function sfLoadConfig(){
+  let cfg;
+  if(LIVE){
+    try{ cfg = await api("/api/service-config"); }
+    catch(e){ console.warn("настройки формы:", e.message); return; }
+  } else cfg = {topics: store.get("sfTopics", null), avatars: store.get("sfAvatars", {})};
+  sfGroups = cfg.topics || sfDefaultGroups();
+  sfAvatars = cfg.avatars || {};
+  sfCfgLoaded = true;
+  if(section === "service"){ renderSfEmployees(); renderSfTiles(); if(sfTab === "log") renderSfLog(); }
+  if(!$("#sfCfgModal").hidden && scTab === "people") renderScPeople();
+}
+
+// Кружок сотрудника: фото, если загружено, иначе первая буква на цвете
+function sfAvatar(name, cls){
+  const i = el("i", cls || null, (name || "?")[0]);
+  i.style.setProperty("--c", sfEmpColor(name));
+  if(sfAvatars[name]){ i.classList.add("ph"); i.style.backgroundImage = "url(" + sfAvatars[name] + ")"; }
+  return i;
+}
 const sfEmpColor = n => SF_EMP_COLORS[SF_EMPLOYEES.indexOf(n)] || "#6b7e9a";
 const sfSplit = v => v.split(",").map(s => s.trim()).filter(Boolean);
 const sfPad = n => String(n).padStart(2, "0");
@@ -1980,8 +2043,7 @@ function renderSfEmployees(){
     b.type = "button";
     b.setAttribute("role","radio");
     b.setAttribute("aria-checked", String(sfEmployee === n));
-    const i = el("i", null, n[0]);
-    i.style.setProperty("--c", sfEmpColor(n));
+    const i = sfAvatar(n);
     b.append(i, document.createTextNode(n));
     b.onclick = () => {
       sfEmployee = n; store.set("sfEmployee", n);
@@ -1992,27 +2054,47 @@ function renderSfEmployees(){
   });
 }
 
+function renderSfMoods(){
+  const box = $("#sfMoods");
+  box.textContent = "";
+  MOODS.forEach(mo => {
+    const b = el("button","sfmo");
+    b.type = "button";
+    b.setAttribute("role","checkbox");
+    b.setAttribute("aria-checked", String(sfMood.includes(mo.k)));
+    b.style.setProperty("--mc", mo.c);
+    b.title = mo.hint;
+    b.append(el("i"), el("span", null, mo.n));
+    b.onclick = () => {
+      sfMood = sfMood.includes(mo.k) ? sfMood.filter(k => k !== mo.k) : sfMood.concat(mo.k);
+      renderSfMoods();
+    };
+    box.append(b);
+  });
+}
+
 function renderSfTiles(){
   const picked = sfSplit($("#sf_questions").value);
   const box = $("#sfTiles");
   box.textContent = "";
   // Раздел — строка: слева название, справа его темы кнопками с галочкой
-  GROUPS.forEach(g => {
+  sfGroups.forEach(g => {
     const row = el("div","sfgrp");
     row.style.setProperty("--fc", g.c);
     const head = el("div","sfg");
     head.append(folderIcon(g, 26), document.createTextNode(g.n));
-    const n = g.kids.filter(f => picked.includes(SF_SHEET[f.k])).length;
+    const n = g.items.filter(it => picked.includes(it.t)).length;
     if(n) head.append(el("b", null, String(n)));
     const pills = el("div","sfpills");
-    g.kids.forEach(f => {
+    if(!g.items.length) pills.append(el("span","sfnone","пунктов пока нет — добавьте в «Настроить»"));
+    g.items.forEach(it => {
       const b = el("button","sfpill");
       b.type = "button";
-      b.setAttribute("aria-pressed", String(picked.includes(SF_SHEET[f.k])));
+      b.setAttribute("aria-pressed", String(picked.includes(it.t)));
       const ck = el("i");
       ck.innerHTML = '<svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.3l2.3 2.3 4.7-5"/></svg>';
-      b.append(ck, document.createTextNode(f.n));
-      b.onclick = () => sfToggle(SF_SHEET[f.k]);
+      b.append(ck, document.createTextNode(it.n));
+      b.onclick = () => sfToggle(it.t);
       pills.append(b);
     });
     row.append(head, pills);
@@ -2045,6 +2127,7 @@ function sfMsg(text, kind){
 }
 
 function sfClear(){
+  sfMood = []; renderSfMoods();
   SF_FIELDS.concat("questions").forEach(k => { $("#sf_" + k).value = ""; });
   sfMark(); renderSfTiles();
 }
@@ -2084,7 +2167,7 @@ async function sfSubmit(e){
     sfMsg("Выберите сотрудника", "err");
     return;
   }
-  const data = {employee: sfEmployee, questions: $("#sf_questions").value.trim()};
+  const data = {employee: sfEmployee, questions: $("#sf_questions").value.trim(), mood: MOODS.map(m => m.k).filter(k => sfMood.includes(k))};
   SF_FIELDS.forEach(k => { data[k] = $("#sf_" + k).value.trim(); });
   if(!SF_FIELDS.some(k => data[k]) && !data.questions){
     sfMsg("Форма пустая — заполните хотя бы одно поле", "err");
@@ -2159,7 +2242,8 @@ function renderSfLog(){
   const q = sfLogQ.toLowerCase();
   const rows = sfForms.filter(f =>
     (!sfLogEmp || f.employee === sfLogEmp) &&
-    (!q || [f.serial, f.workplace, f.organization, f.subscription, f.phone, f.name, f.comment, f.questions, f.employee, f.date]
+    (!q || [f.serial, f.workplace, f.organization, f.subscription, f.phone, f.name, f.comment, f.questions, f.employee, f.date,
+            String(f.mood || "").split(",").map(k => MBY[k] ? MBY[k].n : "").join(" ")]
             .join(" ").toLowerCase().includes(q)));
 
   const today = $("#sfDate").textContent;
@@ -2183,7 +2267,14 @@ function renderSfLog(){
       day = f.date;
       body.append(el("div","sfday", f.date === today ? "Сегодня · " + f.date : f.date));
     }
-    const r = el("div","sfrow" + (f.sent ? "" : " unsent"));
+    const mos = String(f.mood || "").split(",").map(k => MBY[k]).filter(Boolean);
+    const r = el("div","sfrow" + (f.sent ? "" : " unsent") + (mos.length ? " hasmood" : ""));
+    if(mos.length){
+      r.style.setProperty("--mc", mos[0].c);
+      // полоса слева — цвета всех пометок по очереди
+      if(mos.length > 1) r.style.setProperty("--mstripe", "linear-gradient(180deg, " +
+        mos.map((m, i) => m.c + " " + Math.round(i / mos.length * 100) + "% " + Math.round((i + 1) / mos.length * 100) + "%").join(", ") + ")");
+    }
     const tm = el("div","tm", (f.time || "").slice(0,5));
 
     const who = el("div","who");
@@ -2191,10 +2282,21 @@ function renderSfLog(){
     const sub = [f.organization ? f.name : "", f.serial && "ключ " + f.serial, f.workplace && "место " + f.workplace,
                  f.subscription && "подписка " + f.subscription, f.phone].filter(Boolean).join(" · ");
     if(sub) who.append(el("span", null, sub));
+    if(mos.length){
+      const tags = el("div","sfmoodtags");
+      mos.forEach(mo => {
+        const tag = el("span","sfmoodtag");
+        tag.style.setProperty("--mc", mo.c);
+        tag.title = mo.hint;
+        tag.append(el("i"), document.createTextNode(mo.n));
+        tags.append(tag);
+      });
+      who.append(tags);
+    }
 
     const what = el("div","what");
     const items = sfSplit(f.questions || "");
-    const known = items.filter(t => SF_KEY[t]);
+    const known = items.filter(t => sfFind(t));
     known.forEach(t => { const q = el("span","q", t); q.style.setProperty("--c", sfTopicColor(t)); what.append(q); });
     const free = items.filter(t => !known.includes(t)).join(", ");
     const text = [free, f.comment].filter(Boolean).join("\n");
@@ -2202,8 +2304,7 @@ function renderSfLog(){
 
     const st = el("div","st");
     const emp = el("span","emp");
-    const dot = el("i"); dot.style.setProperty("--c", sfEmpColor(f.employee));
-    emp.append(dot, document.createTextNode(f.employee || "—"));
+    emp.append(sfAvatar(f.employee || "—"), document.createTextNode(f.employee || "—"));
     st.append(emp);
     if(f.sent){
       st.append(el("span","sfok", "✓ в таблице"));
@@ -2231,25 +2332,549 @@ function renderSfLog(){
 }
 
 function renderService(){
-  sfTick(); renderSfEmployees(); renderSfTiles(); renderSfPull(); sfMark();
+  if(!sfCfgLoaded) sfLoadConfig();
+  sfTick(); renderSfEmployees(); renderSfTiles(); renderSfMoods(); renderSfPull(); sfMark();
   if(!sfLoaded) sfLoad();
   if(sfTab === "log") renderSfLog();
 }
 
+/* ---------- настройка формы: разделы, пункты, фото ---------- */
+const SC_COLORS = ["#2f7fc1","#d0524a","#7b5cd6","#c88a12","#12907f","#3f9a52","#d0679b","#e07a2f","#5a6b85"];
+let scTab = "topics";
+let scDraft = [];
+let scDirty = false;
+let scSeq = 0;
+let scUploadFor = "";
+const scKey = p => p + Date.now().toString(36) + (++scSeq);
+const scClean = v => v.replace(/,/g, "");   // запятая разбила бы пункт в таблице надвое
+
+function scIcon(d){
+  const b = el("button","iconbtn"); b.type = "button";
+  b.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="'+d+'"/></svg>';
+  return b;
+}
+
+function openSfCfg(tab){
+  scDraft = JSON.parse(JSON.stringify(sfGroups));
+  scDirty = false;
+  scMsg("");
+  setScTab(tab || "topics");
+  $("#sfCfgModal").hidden = false;
+}
+function closeSfCfg(force){
+  if(!force && scDirty && !confirm("Изменения в разделах не сохранены. Закрыть без сохранения?")) return;
+  $("#sfCfgModal").hidden = true;
+}
+function scMsg(t, ok){ const m = $("#scMsg"); m.textContent = t || ""; m.className = "scmsg" + (ok ? " ok" : ""); }
+
+function setScTab(tab){
+  scTab = tab;
+  $("#scTabTopics").setAttribute("aria-selected", String(tab === "topics"));
+  $("#scTabPeople").setAttribute("aria-selected", String(tab === "people"));
+  $("#scReset").hidden = $("#scSave").hidden = tab !== "topics";
+  $("#scCancel").textContent = tab === "topics" ? "Отмена" : "Готово";
+  scMsg("");
+  if(tab === "topics") renderScTopics(); else renderScPeople();
+}
+
+function renderScTopics(focus){
+  const body = $("#scBody");
+  const keep = body.scrollTop;
+  let toFocus = null;
+  body.textContent = "";
+  body.append(el("p","schint","Название раздела и пунктов можно исправить прямо в поле. Новый пункт — впишите в пустое поле и нажмите Enter. Порядок разделов — стрелками. Изменения увидят все после «Сохранить»."));
+  scDraft.forEach((g, gi) => {
+    const card = el("div","scg");
+    card.style.setProperty("--fc", g.c);
+    const head = el("div","scgh");
+    head.append(folderIcon(g, 28));
+    const name = el("input"); name.value = g.n; name.dataset.k = g.k; name.placeholder = "Название раздела"; name.maxLength = 60;
+    name.oninput = () => { g.n = name.value; scDirty = true; };
+    if(focus === g.k) toFocus = name;
+    const colors = el("div","sccolors");
+    SC_COLORS.forEach(c => {
+      const b = el("button"); b.type = "button"; b.title = "Цвет раздела";
+      b.style.setProperty("--sw", c);
+      b.setAttribute("aria-pressed", String(g.c === c));
+      b.onclick = () => { g.c = c; scDirty = true; renderScTopics(); };
+      colors.append(b);
+    });
+    const act = el("div","scact");
+    const up = scIcon("M8 12.5V3.5M4 7.5l4-4 4 4"); up.title = "Выше"; up.disabled = gi === 0;
+    up.onclick = () => { scDraft.splice(gi-1, 0, scDraft.splice(gi, 1)[0]); scDirty = true; renderScTopics(); };
+    const down = scIcon("M8 3.5v9M4 8.5l4 4 4-4"); down.title = "Ниже"; down.disabled = gi === scDraft.length - 1;
+    down.onclick = () => { scDraft.splice(gi+1, 0, scDraft.splice(gi, 1)[0]); scDirty = true; renderScTopics(); };
+    const del = scIcon("M2.8 4.2h10.4M6.4 4.2V2.8h3.2v1.4M4.2 4.2l.7 9a1 1 0 0 0 1 .9h4.2a1 1 0 0 0 1-.9l.7-9"); del.title = "Удалить раздел";
+    del.classList.add("del");
+    del.onclick = () => {
+      if(g.items.length && !confirm("Удалить раздел «" + (g.n || "без названия") + "» вместе с " + g.items.length + " " +
+         plural(g.items.length, "пунктом", "пунктами", "пунктами") + "?")) return;
+      scDraft.splice(gi, 1); scDirty = true; renderScTopics();
+    };
+    act.append(up, down, del);
+    head.append(name, colors, act);
+    card.append(head);
+
+    const items = el("div","scitems");
+    g.items.forEach((it, ii) => {
+      const chip = el("span","scit");
+      const inp = el("input"); inp.value = it.n; inp.maxLength = 80;
+      inp.size = Math.max(4, it.n.length);
+      inp.oninput = () => {
+        inp.value = scClean(inp.value);
+        it.n = it.t = inp.value; inp.size = Math.max(4, inp.value.length); scDirty = true;
+      };
+      const x = el("button", null, "×"); x.type = "button"; x.title = "Удалить пункт";
+      x.onclick = () => { g.items.splice(ii, 1); scDirty = true; renderScTopics(); };
+      chip.append(inp, x);
+      items.append(chip);
+    });
+    const add = el("span","scadd");
+    const ni = el("input"); ni.placeholder = "+ новый пункт, Enter"; ni.maxLength = 80;
+    ni.oninput = () => { ni.value = scClean(ni.value); };
+    let pushed = false;
+    const push = () => {
+      const v = ni.value.trim();
+      if(!v || pushed) return;
+      pushed = true;
+      g.items.push({k: scKey("i"), n: v, t: v}); scDirty = true;
+      renderScTopics("add:" + g.k);
+    };
+    ni.onkeydown = e => { if(e.key === "Enter"){ e.preventDefault(); push(); } };
+    ni.onblur = push;
+    if(focus === "add:" + g.k) toFocus = ni;
+    add.append(ni);
+    items.append(add);
+    card.append(items);
+    body.append(card);
+  });
+  const nb = el("button","scnew","+ Новый раздел");
+  nb.type = "button";
+  nb.onclick = () => {
+    const g = {k: scKey("g"), n: "Новый раздел", c: SC_COLORS[scDraft.length % SC_COLORS.length], items: []};
+    scDraft.push(g); scDirty = true;
+    renderScTopics(g.k);
+  };
+  body.append(nb);
+  body.scrollTop = keep;
+  // фокус сразу, без задержки: иначе быстро набранные буквы теряются
+  if(toFocus){ toFocus.focus(); if(toFocus.select && focus === toFocus.dataset.k) toFocus.select(); toFocus.scrollIntoView({block:"nearest"}); }
+}
+
+async function saveSfCfg(){
+  // пустые пункты молча выкидываем, пустое название раздела — нельзя
+  const groups = scDraft.map(g => ({k:g.k, n:g.n.trim(), c:g.c,
+    items: g.items.map(it => ({k:it.k, n:it.n.trim(), t:(it.t || it.n).trim()})).filter(it => it.n)}));
+  if(groups.some(g => !g.n)){ scMsg("У раздела пустое название"); return; }
+  const seen = new Set();
+  for(const g of groups) for(const it of g.items){
+    const k = it.t.toLowerCase();
+    if(seen.has(k)){ scMsg("Пункт «" + it.n + "» встречается дважды"); return; }
+    seen.add(k);
+  }
+  await sfPutTopics(groups);
+}
+async function sfPutTopics(groups){
+  $("#scSave").disabled = true;
+  try{
+    if(LIVE){
+      const cfg = await api("/api/service-config/topics", {method:"PUT", body:JSON.stringify({groups:groups})});
+      sfGroups = cfg.topics || sfDefaultGroups();
+    } else {
+      store.set("sfTopics", groups);
+      sfGroups = groups || sfDefaultGroups();
+    }
+    closeSfCfg(true);
+    renderSfTiles();
+  }catch(e){ scMsg("Не сохранилось: " + e.message); }
+  finally{ $("#scSave").disabled = false; }
+}
+
+function renderScPeople(){
+  const body = $("#scBody");
+  body.textContent = "";
+  body.append(el("p","schint","Фото видно у всех коллег: в выборе сотрудника и в «Итогах». Подойдёт любое фото — пульт сам обрежет его в квадрат."));
+  const grid = el("div","scpeople");
+  SF_EMPLOYEES.forEach(n => {
+    const card = el("div","scperson");
+    const ava = sfAvatar(n, "scava");
+    const btns = el("div","btns");
+    const up = el("button","btn primary", sfAvatars[n] ? "Заменить фото" : "Загрузить фото");
+    up.type = "button";
+    up.onclick = () => { scUploadFor = n; $("#scFile").value = ""; $("#scFile").click(); };
+    btns.append(up);
+    if(sfAvatars[n]){
+      const rm = el("button","btn", "Убрать");
+      rm.type = "button";
+      rm.onclick = () => sfPutAvatar(n, "");
+      btns.append(rm);
+    }
+    card.append(ava, el("b", null, n), btns);
+    grid.append(card);
+  });
+  body.append(grid);
+}
+
+// Фото ужимаем в браузере до квадрата 256×256 — в базе лежит пара десятков КБ
+function sfSquare(file){
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const side = Math.min(img.width, img.height);
+      const cv = document.createElement("canvas");
+      cv.width = cv.height = 256;
+      cv.getContext("2d").drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, 256, 256);
+      URL.revokeObjectURL(url);
+      resolve(cv.toDataURL("image/jpeg", 0.86));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("это не картинка")); };
+    img.src = url;
+  });
+}
+async function sfPutAvatar(name, image){
+  scMsg(image ? "Загружаю…" : "", true);
+  try{
+    if(LIVE){
+      const cfg = await api("/api/service-config/avatar", {method:"PUT", body:JSON.stringify({employee:name, image:image})});
+      sfAvatars = cfg.avatars || {};
+    } else {
+      if(image) sfAvatars[name] = image; else delete sfAvatars[name];
+      store.set("sfAvatars", sfAvatars);
+    }
+    scMsg(image ? "Фото сохранено" : "Фото убрано", true);
+    renderScPeople(); renderSfEmployees();
+    if(sfTab === "log") renderSfLog();
+  }catch(e){ scMsg("Не сохранилось: " + e.message); }
+}
+
+/* ---------- «жидкий» фон на WebGL ----------
+   Цвета облика медленно перетекают, как краска в воде. Считается на
+   холсте в четверть экрана (плавному градиенту чёткость не нужна),
+   30 кадров в секунду, на скрытой вкладке — пауза. Нет WebGL — остаются
+   обычные градиентные пятна. */
+function fluidBackground(aura){
+  const cv = document.createElement("canvas");
+  const gl = cv.getContext("webgl", {antialias:false, depth:false, alpha:false, powerPreference:"low-power"});
+  if(!gl) return;
+
+  const VS = "attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}";
+  const FS = `precision mediump float;
+uniform vec2 R;uniform float T;uniform vec3 BG,C1,C2,C3;uniform vec3 K;
+float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
+float blob(vec2 p,vec2 c,float r){float d=length(p-c);return exp(-d*d/(r*r));}
+void main(){
+  vec2 uv=gl_FragCoord.xy/R; float a=R.x/R.y; vec2 p=vec2(uv.x*a,uv.y);
+  float t=T*.06;
+  // волнистое искажение пространства — отсюда «жидкость»
+  vec2 q=p;
+  q+=.22*vec2(sin(q.y*2.3+t*3.1),cos(q.x*1.9-t*2.6));
+  q+=.12*vec2(sin(q.y*4.7-t*2.2+1.7),cos(q.x*4.1+t*2.9));
+  q+=.05*vec2(sin(q.y*9.3+t*4.0),cos(q.x*8.7-t*3.4));
+  vec3 col=BG;
+  float b1=blob(q,vec2(.15*a+.18*sin(t*1.1),.85+.12*cos(t*1.3)),.46);
+  float b2=blob(q,vec2(.92*a+.16*cos(t*.9),.18+.14*sin(t*1.2)),.5);
+  float b3=blob(q,vec2(.55*a+.25*sin(t*.7+2.),.5+.22*cos(t*.8)),.34);
+  float b4=blob(q,vec2(.3*a+.2*cos(t*.6+1.),.2+.15*sin(t*1.4)),.38);
+  col=mix(col,C1,b1*K.x);
+  col=mix(col,C2,b2*K.y);
+  col=mix(col,C3,b3*K.z);
+  col=mix(col,C2,b4*K.y*.6);
+  // тонкие светящиеся прожилки по течению
+  float v=sin((q.x*1.3+q.y)*7.+t*5.)*.5+.5;
+  col+=C1*pow(v,14.)*.06*K.x;
+  // зерно против полос на градиенте
+  col+=(h(gl_FragCoord.xy+fract(T))-.5)/160.;
+  gl_FragColor=vec4(col,1.);
+}`;
+  const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+  let prog;
+  try{
+    prog = gl.createProgram();
+    gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS));
+    gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(prog);
+    if(!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+  }catch(e){ console.warn("фон WebGL выключен:", e.message); return; }
+  gl.useProgram(prog);
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog, "p");
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  const U = n => gl.getUniformLocation(prog, n);
+  const uR = U("R"), uT = U("T"), uBG = U("BG"), uC1 = U("C1"), uC2 = U("C2"), uC3 = U("C3"), uK = U("K");
+
+  // цвет CSS-переменной -> [r,g,b] и прозрачность (она становится силой пятна)
+  const probe = document.createElement("i");
+  probe.style.display = "none";
+  document.body.append(probe);
+  const rgba = v => {
+    probe.style.color = "";
+    probe.style.color = getComputedStyle(document.documentElement).getPropertyValue(v).trim() || "#000";
+    const m = getComputedStyle(probe).color.match(/[\d.]+/g) || [0,0,0,1];
+    return [m[0]/255, m[1]/255, m[2]/255, m[3] == null ? 1 : +m[3]];
+  };
+  const palette = () => {
+    const bg = rgba("--bg"), a = rgba("--mesh-a"), b = rgba("--mesh-b"), c = rgba("--acc");
+    const dark = (bg[0] + bg[1] + bg[2]) / 3 < .5;
+    gl.uniform3f(uBG, bg[0], bg[1], bg[2]);
+    gl.uniform3f(uC1, a[0], a[1], a[2]);
+    gl.uniform3f(uC2, b[0], b[1], b[2]);
+    gl.uniform3f(uC3, c[0], c[1], c[2]);
+    // сила пятен: на тёмном фоне ярче, на светлом облике — мягче
+    const k = dark ? 1.25 : .85;
+    gl.uniform3f(uK, Math.min(.8, a[3] * 1.6 * k), Math.min(.8, b[3] * 1.6 * k), dark ? .16 : .1);
+  };
+
+  const size = () => {
+    const w = Math.max(64, Math.round(innerWidth / 4)), h = Math.max(64, Math.round(innerHeight / 4));
+    if(cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; gl.viewport(0, 0, w, h); }
+    gl.uniform2f(uR, w, h);
+  };
+
+  palette(); size();
+  aura.classList.add("gl");
+  aura.prepend(cv);
+  addEventListener("resize", size);
+  new MutationObserver(palette).observe(document.documentElement, {attributes:true, attributeFilter:["data-skin","data-theme"]});
+
+  const t0 = performance.now();
+  let last = 0;
+  const frame = now => {
+    requestAnimationFrame(frame);
+    if(document.hidden || now - last < 33) return;   // 30 кадров в секунду хватает
+    last = now;
+    gl.uniform1f(uT, (now - t0) / 1000);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  };
+  requestAnimationFrame(frame);
+}
+
+/* ================= живые эффекты =================
+   Жидкий фон, луч по краю панелей, пилюля меню, каскад карточек,
+   раскрытие раздела. Всё на transform/opacity. */
+(function fx(){
+  const calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const aura = $(".aura");
+  if(aura && !calm) fluidBackground(aura);
+
+  // световой луч по краю левой панели и главной панели раздела
+  const rail = $(".rail");
+  if(rail && !calm) rail.classList.add("beam");
+  const thread = $(".pane.thread");
+  if(thread && !calm) thread.classList.add("beam");
+  // список кнопок объявлен ниже — ставим пилюлю на следующем кадре
+  setTimeout(() => railPill(true), 0);
+  addEventListener("resize", () => railPill(true));
+})();
+
+// «Пилюля» активного раздела: одна на всё меню, переезжает к нажатой кнопке
+function railPill(instant){
+  const rail = $(".rail");
+  if(!rail) return;
+  let pill = rail.querySelector(".rpill");
+  if(!pill){ pill = el("i","rpill"); rail.prepend(pill); rail.classList.add("haspill"); }
+  const btn = $(FX_NAV[section] || "#navInbox");
+  if(!btn){ pill.classList.add("hide"); return; }
+  pill.classList.remove("hide");
+  if(instant) pill.style.transition = "none";
+  pill.style.width = btn.offsetWidth + "px";
+  pill.style.height = btn.offsetHeight + "px";
+  pill.style.transform = "translate(" + btn.offsetLeft + "px," + btn.offsetTop + "px)";
+  if(instant){ void pill.offsetWidth; pill.style.transition = ""; }
+}
+
+// Карточки и строки раздела въезжают по очереди
+const FX_ITEMS = ".conv, .crow, .cline, .fgroup, .ftile, .sfgrp, .sfrow, .sfcard, .rrow, .pcard, .ibox, .stat";
+function fxCascade(root){
+  if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const items = [...root.querySelectorAll(FX_ITEMS)].filter(n => n.offsetParent && !n.parentElement.closest(".rise-in")).slice(0, 36);
+  items.forEach((n, k) => {
+    n.style.setProperty("--i", k);
+    n.classList.remove("rise-in"); void n.offsetWidth; n.classList.add("rise-in");
+  });
+  setTimeout(() => items.forEach(n => n.classList.remove("rise-in")), 600 + items.length * 32);
+}
+
+// Раскрытие раздела кругом от кнопки в левой панели
+const FX_NAV = {inbox:"#navInbox", clients:"#navClients", archive:"#navArchive", service:"#navService", gge:"#navGge"};
+const FX_VIEW = {inbox:"#viewInbox", clients:"#viewClients", archive:"#viewArchive", service:"#viewService", gge:"#viewGge"};
+function fxReveal(name){
+  if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const btn = $(FX_NAV[name]), view = $(FX_VIEW[name]);
+  if(!btn || !view) return;
+  // светящаяся полоса проносится над разделом, за ней он и открывается
+  const v = view.getBoundingClientRect();
+  let scan = $(".fxscan");
+  if(!scan){ scan = el("i","fxscan"); document.body.append(scan); }
+  scan.style.top = v.top + "px";
+  scan.style.height = v.height + "px";
+  scan.style.left = v.left + "px";
+  scan.style.setProperty("--sw", v.width + "px");
+  view.classList.remove("reveal"); btn.classList.remove("burst"); scan.classList.remove("run");
+  void view.offsetWidth;
+  view.classList.add("reveal"); btn.classList.add("burst"); scan.classList.add("run");
+  fxCascade(view);
+  clearTimeout(fxReveal.t);
+  fxReveal.t = setTimeout(() => { view.classList.remove("reveal"); btn.classList.remove("burst"); scan.classList.remove("run"); }, 760);
+}
+
+/* ================= проверка сметы ГГЭ =================
+   XML уходит на сервер пульта, тот отправляет его на checkxml.gge.ru и
+   к каждой ошибке подбирает объяснение и шаги в Турбосметчике. */
+const GGE_SLOTS = [["", "Определить сам"], ["ObjectAndLocalEstimates", "Локальная / объектная"],
+  ["AllEstimatesCapitalConstruction", "Сводный расчёт"], ["DesignAndSurveyEstimates", "ПИР"],
+  ["DismantlingEstimates", "Демонтаж"], ["IndividualEstimates", "Индивидуальные нормативы"]];
+const GGE_SRC = {xsd:"Схема XSD", logic:"Логика XSD", snb:"Сверка с базой", xslt:"Преобразование", html:"Отображение"};
+let ggeSlot = "";
+let ggeLast = null;
+
+function renderGge(){
+  const box = $("#gSlots");
+  box.textContent = "";
+  GGE_SLOTS.forEach(([k, n]) => {
+    const b = el("button","chip", n);
+    b.type = "button";
+    b.setAttribute("aria-pressed", String(ggeSlot === k));
+    b.onclick = () => { ggeSlot = k; renderGge(); };
+    box.append(b);
+  });
+  if(ggeLast) renderGgeResult(ggeLast);
+}
+
+async function ggeCheck(file){
+  const drop = $("#gDrop"), out = $("#gOut");
+  if(!LIVE){ out.textContent = ""; out.append(el("div","gerr","Проверка работает только в живом пульте — в демо нет сервера.")); return; }
+  drop.classList.add("busy");
+  $("#gDropTitle").textContent = "Проверяю на checkxml.gge.ru…";
+  $("#gDropSub").textContent = file.name + " · обычно 5–30 секунд";
+  out.textContent = "";
+  try{
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("slot", ggeSlot);
+    const r = await fetch("/api/gge/check", {method:"POST", body:fd});
+    if(!r.ok){ let d = "HTTP " + r.status; try{ d = (await r.json()).detail || d; }catch(e){} throw new Error(d); }
+    ggeLast = await r.json();
+    renderGgeResult(ggeLast);
+  }catch(e){
+    out.append(el("div","gerr","Не получилось проверить: " + e.message));
+  }finally{
+    drop.classList.remove("busy");
+    $("#gDropTitle").textContent = "Перетащите XML сметы сюда";
+    $("#gDropSub").textContent = "или нажмите, чтобы выбрать файл · тот, что выгружен из Турбосметчика для экспертизы";
+  }
+}
+
+// Одинаковые ошибки (одно правило, один текст) — одной карточкой «встречается N раз»
+function ggeGroups(items){
+  const map = new Map();
+  items.forEach(it => {
+    const key = (it.rule || "") + "|" + (it.rule ? (it.title || "") : it.text);
+    if(!map.has(key)) map.set(key, Object.assign({}, it, {count:0, places:[]}));
+    const g = map.get(key);
+    g.count++;
+    const place = [it.position, it.got && ("было: " + it.got), it.expected && ("нужно: " + it.expected)].filter(Boolean).join(" · ");
+    if(place && g.places.length < 30) g.places.push(place);
+    if(g.raws === undefined) g.raws = [];
+    if(g.raws.length < 5 && !g.raws.includes(it.text)) g.raws.push(it.text);
+  });
+  return [...map.values()].sort((a, b) => (a.kind === b.kind ? b.count - a.count : a.kind === "error" ? -1 : 1));
+}
+
+function renderGgeResult(res){
+  const out = $("#gOut");
+  out.textContent = "";
+  const s = res.summary;
+  const v = el("div","gverdict");
+  v.style.setProperty("--vc", s.ok ? "var(--ok)" : s.errors ? "var(--crit)" : "var(--warn)");
+  const t = el("div");
+  t.append(el("h3", null, s.ok ? (s.warnings ? "Ошибок нет, есть предупреждения" : "Смета проходит проверку") : "Смета не проходит проверку"),
+           el("p", null, res.file + " · " + res.slot_name + (s.schema ? " · схема " + s.schema : "")));
+  const nums = el("div","gnums");
+  const num = (n, l, c) => { const d = el("div","gnum " + c); d.append(el("b", null, String(n)), el("span", null, l)); nums.append(d); };
+  num(s.errors, plural(s.errors, "ошибка", "ошибки", "ошибок"), "e");
+  num(s.warnings, plural(s.warnings, "предупреждение", "предупреждения", "предупреждений"), "w");
+  v.append(el("div","gvi", s.ok ? "✓" : "!"), t, nums);
+  out.append(v);
+  if(!res.items.length){ out.append(el("p","ghint","Сайт не нашёл замечаний — смету можно отправлять.")); return; }
+  if(s.old_schema){
+    const o = el("div","gold");
+    o.append(el("b", null, "Главная причина — файл выгружен в старой версии схемы"),
+             el("span", null, "Сайт сверил его со схемой " + s.schema + ". Большая часть ошибок ниже — следствие этого. " +
+               "Сначала выгрузите смету заново в актуальной схеме (как — в карточке «Лишнее поле»), потом проверьте ещё раз."));
+    out.append(o);
+  }
+  out.append(el("p","ghint","Начните с первой карточки: часто одна причина даёт десятки одинаковых ошибок."));
+
+  ggeGroups(res.items).forEach((g, k) => {
+    const c = el("article","gcard " + g.kind);
+    const h = el("div","gch");
+    h.append(el("h4", null, g.title || g.text));
+    const tags = el("div","gtags");
+    tags.append(el("span","gtag", g.kind === "warning" ? "Предупреждение" : "Ошибка"));
+    tags.append(el("span","gtag src", GGE_SRC[g.source] || g.source));
+    if(g.count > 1) tags.append(el("span","gtag cnt", "× " + g.count));
+    h.append(tags);
+    c.append(h);
+    if(g.plain) c.append(el("p","gwhat", g.plain));
+    if(g.fix && g.fix.length){
+      const f = el("div","gfix");
+      const b = el("b"); b.textContent = "Что сделать в Турбосметчике";
+      const ol = el("ol");
+      g.fix.forEach(step => {
+        const li = el("li");
+        // «Меню › Пункт» в шагах выделяем плашкой — так путь видно сразу
+        String(step).split(/(«[^»]+»)/).forEach(part => {
+          if(/^«[^»]+»$/.test(part)) li.append(el("span","path", part.slice(1, -1)));
+          else li.append(document.createTextNode(part));
+        });
+        ol.append(li);
+      });
+      f.append(b, ol);
+      c.append(f);
+    }
+    const det = el("details","gdet");
+    det.append(el("summary", null, g.places.length ? "Где именно и текст с сайта" : "Текст с сайта"));
+    if(g.places.length){
+      const kv = el("div","gkv");
+      g.places.forEach(p => kv.append(el("span", null, p)));
+      if(g.count > g.places.length) kv.append(el("span", null, "и ещё " + (g.count - g.places.length)));
+      det.append(kv);
+    }
+    det.append(el("div","graw", g.raws.join("\n\n")));
+    if(g.ref) det.append(el("div","gref", "Объяснение — из базы знаний ИИ-помощника: " + g.ref.replace(/\.txt$/, "").replace(/_/g, " ")));
+    if(!g.fix || !g.fix.length) det.append(el("div","gref", "Точных шагов для этой ошибки в базе знаний пока нет — разберём и добавим."));
+    c.append(det);
+    c.style.setProperty("--i", k);
+    c.classList.add("rise-in");
+    out.append(c);
+  });
+}
+
 /* ================= навигация ================= */
 function setSection(name){
+  const moved = name !== section;
   section = name;
+  if(moved && fxReady) requestAnimationFrame(() => fxReveal(name));
+  railPill(!fxReady);
   $("#viewInbox").classList.toggle("on", name === "inbox");
   $("#viewClients").classList.toggle("on", name === "clients");
   $("#viewArchive").classList.toggle("on", name === "archive");
   $("#viewService").classList.toggle("on", name === "service");
+  $("#viewGge").classList.toggle("on", name === "gge");
   $("#navInbox").setAttribute("aria-pressed", String(name === "inbox"));
   $("#navClients").setAttribute("aria-pressed", String(name === "clients"));
   $("#navArchive").setAttribute("aria-pressed", String(name === "archive"));
   $("#navService").setAttribute("aria-pressed", String(name === "service"));
+  $("#navGge").setAttribute("aria-pressed", String(name === "gge"));
   if(name === "archive") renderArchive();
   if(name === "clients") renderClients();
   if(name === "service") renderService();
+  if(name === "gge") renderGge();
 }
 function goInbox(id){
   setSection("inbox");
@@ -2697,6 +3322,12 @@ $("#navInbox").onclick = () => setSection("inbox");
 $("#navClients").onclick = () => { openClient = null; setSection("clients"); };
 $("#navArchive").onclick = () => { openFolder = null; setSection("archive"); };
 $("#navService").onclick = () => setSection("service");
+$("#navGge").onclick = () => setSection("gge");
+$("#gFile").addEventListener("change", e => { const f = e.target.files && e.target.files[0]; if(f) ggeCheck(f); e.target.value = ""; });
+["dragenter","dragover"].forEach(ev => $("#gDrop").addEventListener(ev, e => { e.preventDefault(); $("#gDrop").classList.add("over"); }));
+["dragleave","drop"].forEach(ev => $("#gDrop").addEventListener(ev, e => { e.preventDefault(); $("#gDrop").classList.remove("over"); }));
+$("#gDrop").addEventListener("drop", e => { const f = e.dataTransfer.files && e.dataTransfer.files[0]; if(f) ggeCheck(f); });
+$("#gDrop").addEventListener("keydown", e => { if(e.key === "Enter" || e.key === " "){ e.preventDefault(); $("#gFile").click(); } });
 $("#sfTabFill").onclick = () => setSfTab("fill");
 $("#sfTabLog").onclick = () => setSfTab("log");
 $("#sfFill").addEventListener("submit", sfSubmit);
@@ -2716,6 +3347,24 @@ $("#sfFill").addEventListener("input", e => {
 });
 $("#sfReset").onclick = () => { sfClear(); sfMsg(""); };
 $("#sfPull").onclick = sfPull;
+$("#sfCfgBtn").onclick = () => openSfCfg("topics");
+$("#sfPhotoBtn").onclick = () => openSfCfg("people");
+$("#scTabTopics").onclick = () => setScTab("topics");
+$("#scTabPeople").onclick = () => setScTab("people");
+$("#scClose").onclick = () => closeSfCfg();
+$("#scCancel").onclick = () => closeSfCfg();
+$("#scSave").onclick = saveSfCfg;
+$("#scReset").onclick = () => {
+  if(confirm("Вернуть стандартные разделы и пункты? Ваши изменения пропадут.")) sfPutTopics(null);
+};
+$("#sfCfgModal").addEventListener("click", e => { if(e.target.id === "sfCfgModal") closeSfCfg(); });
+$("#scFile").addEventListener("change", async e => {
+  const f = e.target.files && e.target.files[0];
+  if(!f || !scUploadFor) return;
+  if(f.size > 25 * 1024 * 1024){ scMsg("Файл больше 25 МБ"); return; }
+  try{ await sfPutAvatar(scUploadFor, await sfSquare(f)); }
+  catch(err){ scMsg("Не получилось: " + err.message); }
+});
 $("#sfLogQ").addEventListener("input", e => { sfLogQ = e.target.value.trim(); renderSfLog(); });
 setInterval(() => { if(section === "service") sfTick(); }, 1000);
 $("#cliQ").addEventListener("input", e => { cQuery = e.target.value.trim(); renderClients(); });
@@ -2756,6 +3405,7 @@ document.addEventListener("keydown", e => {
     if(!$("#intakeModal").hidden) $("#intakeModal").hidden = true;
     if(!$("#deleteModal").hidden) closeDeleteModal();
     if(!$("#cliDelModal").hidden) closeCliDel();
+    if(!$("#sfCfgModal").hidden) closeSfCfg();
     return;
   }
   if(!$("#archiveModal").hidden && e.key === "Enter" && pendingFolders.length &&
@@ -2789,6 +3439,9 @@ $("#themeBtn").onclick = () => {
 };
 const saved = store.get("theme", null);
 if(saved) document.documentElement.setAttribute("data-theme", saved);
+
+let fxReady = false;
+setTimeout(() => { fxReady = true; }, 1500);
 
 /* ================= старт ================= */
 if(innerWidth > 820) $("#inbox").dataset.view = "thread";

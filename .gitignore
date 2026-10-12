@@ -25,3 +25,6 @@ backend/server.old.log
 tools/
 backend/cloudpub.log
 backend/cloudpub.old.log
+
+# База объяснений ошибок ГГЭ — собирается из базы знаний ИИ-помощника (backend/build_gge_kb.py)
+backend/app/gge_kb.json

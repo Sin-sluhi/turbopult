@@ -20,7 +20,8 @@ import ipaddress
 from . import config
 
 COOKIE = "tp_access"
-OPEN_PATHS = ("/webhook/", "/login", "/tp-ping")
+# значок вкладки открыт: браузер просит его и на странице входа
+OPEN_PATHS = ("/webhook/", "/login", "/tp-ping", "/favicon.ico", "/favicon.png")
 
 
 def _networks() -> list:
@@ -88,18 +89,20 @@ LOGIN_PAGE = """<!doctype html>
 <html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Турбопульт</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;600;700&family=Unbounded:wght@700&display=swap">
 <style>
  body{margin:0;min-height:100vh;display:grid;place-items:center;background:#070b14;
-      color:#eff4fc;font:15px/1.5 system-ui,"Segoe UI",Roboto,sans-serif}
+      color:#eff4fc;font:15px/1.5 "Onest",system-ui,"Segoe UI",Roboto,sans-serif}
  form{width:min(360px,90vw);background:rgba(17,25,42,.8);border:1px solid rgba(255,255,255,.1);
       border-radius:24px;padding:30px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
- h1{margin:0 0 6px;font-size:21px;letter-spacing:-.02em}
+ h1{margin:0 0 6px;font-family:"Unbounded","Onest",system-ui,sans-serif;font-size:20px;font-weight:700;letter-spacing:-.01em}
  p{margin:0 0 20px;color:#9db0ca;font-size:13.5px}
  input{width:100%;box-sizing:border-box;background:rgba(255,255,255,.05);color:inherit;
        border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:13px 15px;font:inherit}
  input:focus{outline:2px solid #22c8f5;outline-offset:1px}
  button{width:100%;margin-top:12px;border:0;border-radius:14px;padding:14px;cursor:pointer;
-        font:600 15px system-ui;color:#03202c;background:linear-gradient(150deg,#6fe6ff,#22c8f5)}
+        font:700 15px "Onest",system-ui;color:#03202c;background:linear-gradient(150deg,#6fe6ff,#22c8f5)}
  .err{margin:14px 0 0;color:#ff6f62;font-size:13px}
 </style></head><body>
 <form method="post" action="/login">
